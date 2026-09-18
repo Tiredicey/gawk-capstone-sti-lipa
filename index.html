@@ -40,6 +40,8 @@
     .card-actions { display: flex; gap: 0.5rem; }
     .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 0.6rem; background: var(--accent); color: white; border: none; border-radius: 0.5rem; font-size: 0.825rem; font-weight: 600; cursor: pointer; }
     .btn:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #1e293b; border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #334155; }
     .btn-delete { background: rgba(239, 68, 68, 0.2); color: #fca5a5; width: auto; padding: 0.6rem 0.85rem; }
     .btn-delete:hover { background: var(--danger); color: white; }
     .alert-box { display: none; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: #34d399; font-size: 0.8rem; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; text-align: center; }
@@ -78,24 +80,37 @@
 
   <div id="proposalsContainer"></div>
 
-  <form class="form-box" id="proposalForm" onsubmit="handleFormSubmit(event)">
+  <div class="form-box">
     <div class="section-title" style="margin-bottom: 0.5rem;">
-      <span>Submit Another Proposal</span>
+      <span>Smart Paste / Format Tool</span>
     </div>
     <div class="form-group">
-      <label for="newTitle">Project Title</label>
-      <input type="text" id="newTitle" class="form-control" required placeholder="Example: AgriGuard Lipa">
+      <label for="smartPasteInput">Paste Raw Messenger Text or Notes</label>
+      <textarea id="smartPasteInput" class="form-control" rows="4" placeholder="Example:
+CodeProvenance (AST + Git Telemetry)
+Parses source code into AST trees to detect logic cloning."></textarea>
     </div>
-    <div class="form-group">
-      <label for="newDomain">Domain / Category</label>
-      <input type="text" id="newDomain" class="form-control" required placeholder="Example: Agriculture / Computer Vision">
-    </div>
-    <div class="form-group">
-      <label for="newDesc">Summary and Problem Solved</label>
-      <textarea id="newDesc" class="form-control" rows="2" required placeholder="Describe what problem this solves..."></textarea>
-    </div>
-    <button type="submit" class="btn">Add Proposal to List</button>
-  </form>
+    <button type="button" class="btn btn-secondary" onclick="parseAndAddProposal()" style="margin-bottom: 1rem;">Auto-Format and Add Proposal</button>
+
+    <details>
+      <summary style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-bottom: 0.75rem;">Or fill out fields manually</summary>
+      <form id="proposalForm" onsubmit="handleManualFormSubmit(event)">
+        <div class="form-group">
+          <label for="newTitle">Project Title</label>
+          <input type="text" id="newTitle" class="form-control" placeholder="Example: AgriGuard Lipa">
+        </div>
+        <div class="form-group">
+          <label for="newDomain">Domain / Category</label>
+          <input type="text" id="newDomain" class="form-control" placeholder="Example: Agriculture / Computer Vision">
+        </div>
+        <div class="form-group">
+          <label for="newDesc">Summary and Problem Solved</label>
+          <textarea id="newDesc" class="form-control" rows="2" placeholder="Describe what problem this solves..."></textarea>
+        </div>
+        <button type="submit" class="btn">Add Manual Proposal</button>
+      </form>
+    </details>
+  </div>
 
   <div class="section-title" style="margin-top: 1.75rem;">
     <span>Team Roles</span>
@@ -228,6 +243,95 @@
       });
     }
 
+    function parseAndAddProposal() {
+      const raw = document.getElementById('smartPasteInput').value.trim();
+      if (!raw) {
+        alert('Paste raw text into the box first.');
+        return;
+      }
+
+      const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) return;
+
+      let rawTitle = lines[0].replace(/^(\+?\s*\d*\s*title\s*:?|\d+[\.\)]|\-\s*)/i, '').trim();
+      let extractedDomain = 'General IT';
+
+      const parenMatch = rawTitle.match(/\((.*?)\)/);
+      if (parenMatch) {
+        extractedDomain = parenMatch[1];
+        rawTitle = rawTitle.replace(/\(.*?\)/, '').trim();
+      }
+
+      let desc = lines.slice(1).join(' ');
+      if (!desc) {
+        desc = 'No additional description provided.';
+      }
+
+      const existing = [...DEFAULT_PROPOSALS, ...getCustomProposals()];
+      const duplicate = existing.some(item => item.title.toLowerCase() === rawTitle.toLowerCase());
+      if (duplicate) {
+        alert('A proposal with this title already exists.');
+        return;
+      }
+
+      const customList = getCustomProposals();
+      customList.push({
+        id: 'custom-' + Date.now(),
+        title: rawTitle,
+        domain: extractedDomain,
+        desc: desc,
+        note: 'Formatted from raw paste'
+      });
+
+      saveCustomProposals(customList);
+      document.getElementById('smartPasteInput').value = '';
+      renderProposals();
+      showNotification(`Formatted and added: "${rawTitle}"`);
+    }
+
+    function handleManualFormSubmit(event) {
+      event.preventDefault();
+      const titleInput = document.getElementById('newTitle');
+      const domainInput = document.getElementById('newDomain');
+      const descInput = document.getElementById('newDesc');
+
+      const title = titleInput.value.trim();
+      const domain = domainInput.value.trim();
+      const desc = descInput.value.trim();
+
+      if (!title || !desc) return;
+
+      const existing = [...DEFAULT_PROPOSALS, ...getCustomProposals()];
+      const duplicate = existing.some(item => item.title.toLowerCase() === title.toLowerCase());
+      if (duplicate) {
+        alert('A proposal with this title already exists.');
+        return;
+      }
+
+      const customList = getCustomProposals();
+      customList.push({
+        id: 'custom-' + Date.now(),
+        title: title,
+        domain: domain || 'General IT',
+        desc: desc,
+        note: 'Custom manual proposal'
+      });
+
+      saveCustomProposals(customList);
+
+      titleInput.value = '';
+      domainInput.value = '';
+      descInput.value = '';
+
+      renderProposals();
+    }
+
+    function deleteProposal(id) {
+      const filtered = getCustomProposals().filter(item => item.id !== id);
+      saveCustomProposals(filtered);
+      renderProposals();
+    }
+
     function dispatchVote(title) {
       const text = `I vote for: ${title}`;
 
@@ -284,49 +388,6 @@
       alertBox.textContent = msg;
       alertBox.style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function handleFormSubmit(event) {
-      event.preventDefault();
-      const titleInput = document.getElementById('newTitle');
-      const domainInput = document.getElementById('newDomain');
-      const descInput = document.getElementById('newDesc');
-
-      const title = titleInput.value.trim();
-      const domain = domainInput.value.trim();
-      const desc = descInput.value.trim();
-
-      if (!title || !desc) return;
-
-      const existing = [...DEFAULT_PROPOSALS, ...getCustomProposals()];
-      const duplicate = existing.some(item => item.title.toLowerCase() === title.toLowerCase());
-      if (duplicate) {
-        alert('A proposal with this title already exists.');
-        return;
-      }
-
-      const customList = getCustomProposals();
-      customList.push({
-        id: 'custom-' + Date.now(),
-        title: title,
-        domain: domain || 'General IT',
-        desc: desc,
-        note: 'Custom team suggestion'
-      });
-
-      saveCustomProposals(customList);
-
-      titleInput.value = '';
-      domainInput.value = '';
-      descInput.value = '';
-
-      renderProposals();
-    }
-
-    function deleteProposal(id) {
-      const filtered = getCustomProposals().filter(item => item.id !== id);
-      saveCustomProposals(filtered);
-      renderProposals();
     }
 
     function updateTimer() {
