@@ -73,7 +73,7 @@
 
   <div class="section-title">
     <span>Candidate Proposals</span>
-    <span style="font-size: 0.75rem; color: var(--text-muted);">Tap vote to copy</span>
+    <span style="font-size: 0.75rem; color: var(--text-muted);">Tap vote to dispatch</span>
   </div>
 
   <div id="proposalsContainer"></div>
@@ -121,6 +121,7 @@
 
   <script>
     const TARGET_DATE = new Date('2027-01-31T23:59:59');
+    const MESSENGER_THREAD_URL = 'https://www.facebook.com/messages/t/1629525598528599';
 
     const DEFAULT_PROPOSALS = [
       {
@@ -210,7 +211,7 @@
         voteBtn.type = 'button';
         voteBtn.className = 'btn';
         voteBtn.textContent = `Vote for Proposal ${index + 1}`;
-        voteBtn.addEventListener('click', () => copyVoteText(item.title));
+        voteBtn.addEventListener('click', () => dispatchVote(item.title));
         actions.appendChild(voteBtn);
 
         if (item.id && !item.id.toString().startsWith('default-')) {
@@ -227,10 +228,32 @@
       });
     }
 
-    function copyVoteText(title) {
+    function dispatchVote(title) {
       const text = `I vote for: ${title}`;
+
+      if (navigator.share) {
+        navigator.share({
+          title: 'Capstone Vote Submission',
+          text: text,
+          url: window.location.href
+        }).then(() => {
+          showNotification(`Shared vote: "${text}"`);
+        }).catch(() => {
+          executeDesktopDispatch(text);
+        });
+      } else {
+        executeDesktopDispatch(text);
+      }
+    }
+
+    function executeDesktopDispatch(text) {
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(() => showNotification(text)).catch(() => fallbackCopy(text));
+        navigator.clipboard.writeText(text).then(() => {
+          showNotification(`Copied "${text}". Opening Messenger...`);
+          setTimeout(() => {
+            window.open(MESSENGER_THREAD_URL, '_blank');
+          }, 600);
+        }).catch(() => fallbackCopy(text));
       } else {
         fallbackCopy(text);
       }
@@ -246,12 +269,85 @@
       textarea.select();
       try {
         document.execCommand('copy');
-        showNotification(text);
+        showNotification(`Copied "${text}". Opening Messenger...`);
+        setTimeout(() => {
+          window.open(MESSENGER_THREAD_URL, '_blank');
+        }, 600);
       } catch (err) {
-        alert(`Copy failed. Type manually: ${text}`);
+        alert(`Action failed. Please copy this text: ${text}`);
       }
       document.body.removeChild(textarea);
     }
 
-    function showNotification(text) {
-      const alertBo
+    function showNotification(msg) {
+      const alertBox = document.getElementById('copyAlert');
+      alertBox.textContent = msg;
+      alertBox.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleFormSubmit(event) {
+      event.preventDefault();
+      const titleInput = document.getElementById('newTitle');
+      const domainInput = document.getElementById('newDomain');
+      const descInput = document.getElementById('newDesc');
+
+      const title = titleInput.value.trim();
+      const domain = domainInput.value.trim();
+      const desc = descInput.value.trim();
+
+      if (!title || !desc) return;
+
+      const existing = [...DEFAULT_PROPOSALS, ...getCustomProposals()];
+      const duplicate = existing.some(item => item.title.toLowerCase() === title.toLowerCase());
+      if (duplicate) {
+        alert('A proposal with this title already exists.');
+        return;
+      }
+
+      const customList = getCustomProposals();
+      customList.push({
+        id: 'custom-' + Date.now(),
+        title: title,
+        domain: domain || 'General IT',
+        desc: desc,
+        note: 'Custom team suggestion'
+      });
+
+      saveCustomProposals(customList);
+
+      titleInput.value = '';
+      domainInput.value = '';
+      descInput.value = '';
+
+      renderProposals();
+    }
+
+    function deleteProposal(id) {
+      const filtered = getCustomProposals().filter(item => item.id !== id);
+      saveCustomProposals(filtered);
+      renderProposals();
+    }
+
+    function updateTimer() {
+      const now = new Date();
+      if (now > TARGET_DATE) {
+        document.getElementById('countdown').textContent = 'SELECTION PERIOD CONCLUDED';
+        return;
+      }
+      const diff = TARGET_DATE - now;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      document.getElementById('countdown').textContent = 
+        `${days}d ${hours}h ${minutes}m ${seconds}s left`;
+    }
+
+    setInterval(updateTimer, 1000);
+    updateTimer();
+    renderProposals();
+  </script>
+</body>
+</html>
