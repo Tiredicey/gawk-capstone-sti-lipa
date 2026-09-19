@@ -95,6 +95,14 @@ function openDialog(title, body, className = '') {
   $('dialogStatus').textContent = ''; $('dialog').showModal(); $('dialogTitle').focus();
 }
 function closeDialog() { $('dialog').close(); }
+$('dialog').addEventListener('keydown', event => {
+  if (event.key !== 'Tab') return;
+  const controls = [...$('dialog').querySelectorAll('button, a[href], input, select, textarea, summary, [tabindex]')].filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length);
+  const first = controls[0], last = controls.at(-1);
+  if (!first) { event.preventDefault(); $('dialogTitle').focus(); return; }
+  if (event.shiftKey && (document.activeElement === first || document.activeElement === $('dialogTitle'))) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 $('dialog').addEventListener('close', () => {
   let target = returnFocus;
   if (!target?.isConnected && target?.dataset.id) target = [...document.querySelectorAll('[data-action]')].find(el => el.dataset.id === returnFocus.dataset.id && el.dataset.action === returnFocus.dataset.action);
