@@ -1,86 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="STI College Lipa BSIT Capstone Title Decision Hub for Group Gawk Capstoney">
-  <meta property="og:title" content="Capstone Title Decision | STI College Lipa">
-  <meta property="og:description" content="Review capstone concepts, keep personal notes, compare a shortlist, and prepare a vote message.">
-  <link rel="icon" href="/static/favicon.svg">
-  <title>Gawk Capstoney | STI College Lipa</title>
-  <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Gawk Capstoney’s proposal-review workspace for STI College Lipa. Compare ideas, keep personal reviews, and prepare vote messages.">
+<meta name="color-scheme" content="light dark">
+<title>Decision room · Gawk Capstoney</title>
+<link rel="icon" href="/static/favicon.svg">
+<link rel="stylesheet" href="/static/style.css">
+<script type="module" src="/static/app.js"></script>
 </head>
-<body><a class="skip" href="#main">Skip to content</a><aside class="sidebar"><a href="#main" class="brand"><b>c.</b><span>capstoney<small>A space for good ideas</small></span></a><p class="eyebrow">YOUR WORKSPACE</p><nav aria-label="Main navigation"><a href="#board">Proposal board</a><button id="compareButton">Compare shortlist</button><a href="#add">Add an idea</a><a href="#team">Team roles</a><a href="#sources">Evidence notes</a></nav><section class="side-note"><h2>One clear next step.</h2><p>Start with an idea. Ask a useful question. Build from there.</p></section><div class="side-bottom"><button id="themeButton">Switch appearance</button><p>Gawk Capstoney<small>STI College Lipa · BSIT</small></p></div></aside><div class="shell"><div class="topbar"><span>STI College Lipa / <strong>Decision room</strong></span><div><span id="saveStatus" role="status">Connecting…</span><button id="exportButton" class="btn btn-secondary">Export</button><button id="importButton" class="btn btn-secondary">Import</button></div></div><main id="main" tabindex="-1">
-
-  <header class="hero"><div>
-    <div class="badge">STI COLLEGE LIPA</div>
-    <h1>Make room for<br>a <em>good idea.</em></h1>
-    <p class="sub">Find the project worth building, together.<br>Gawk Capstoney · A.Y. 2026–2027</p><a class="btn hero-button" href="#add">＋ Add a proposal</a>
-  </div><section class="timer-box">
-    <div class="timer-title">OUR NEXT MILESTONE</div><h2>Choose a direction.</h2><p>January 31, 2027</p><div class="timer-title">Planning target · Philippine time</div>
-    <p class="help">A planning target, not a submission cutoff.</p>
-    </section></header>
-
-  <div id="copyAlert" class="alert-box" role="status"></div>
-
-  <section id="board"><div class="section-title"><div><p class="eyebrow">THE POSSIBILITIES</p><h2>Your proposal board</h2></div><span id="proposalCount"></span></div><div class="toolbar"><label><span class="sr-only">Search proposals</span><input type="search" id="searchInput" placeholder="Find an idea…"></label><label><span class="sr-only">Filter proposals</span><select id="filterInput"><option value="all">All ideas</option><option value="shortlist">Shortlisted</option></select></label><button class="btn btn-secondary" id="recoverButton">Recover old proposals</button></div>
-
-  <div id="proposalsContainer" aria-busy="true"></div><p class="help">Ideas, not promises. These concepts need feasibility and outcome validation.</p></section>
-
-  <section class="form-box" id="add">
-    <div class="section-title">
-      <span>Add your next idea</span>
-    </div>
-    <div class="form-group">
-      <label for="smartPasteInput">Paste Raw Messenger Text or Notes</label>
-      <textarea id="smartPasteInput" maxlength="5000" class="form-control" rows="4" placeholder="Example:
-CodeProvenance (AST + Git Telemetry)
-Parses source code into AST trees to detect logic cloning."></textarea>
-    </div>
-    <button type="button" class="btn btn-secondary">Format notes into fields</button>
-
-    <details id="manualFields" open>
-      <summary>Review or fill out the fields</summary>
-      <form id="proposalForm">
-        <div class="form-group">
-          <label for="newTitle">Project Title</label>
-          <input type="text" id="newTitle" required maxlength="240" class="form-control" placeholder="Example: AgriGuard Lipa">
-        </div>
-        <div class="form-group">
-          <label for="newDomain">Domain / Category</label>
-          <input type="text" id="newDomain" maxlength="100" class="form-control" placeholder="Example: Agriculture / Computer Vision">
-        </div>
-        <div class="form-group">
-          <label for="newDesc">Summary and Problem Solved</label>
-          <textarea id="newDesc" required maxlength="4000" class="form-control" rows="2" placeholder="Describe what problem this solves..."></textarea>
-        </div>
-        <button type="submit" class="btn">Add Manual Proposal</button>
-      </form>
-    </details>
-  </section>
-
-  <div class="section-title">
-    <h2 id="team">Team roles</h2>
-  </div>
-  <div class="card">
-    <table class="roles-table">
-      <thead>
-        <tr><th>Role</th><th>Primary Responsibility</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Lead Architect</td><td>Backend Services, PostGIS Schemas, API Gateways</td></tr>
-        <tr><td>Lead Researcher</td><td>Research Models, Detection Logic, Flow Verification</td></tr>
-        <tr><td>UI/UX Engineer</td><td>Mobile Responsive Views, Client State Management</td></tr>
-        <tr><td>Technical Writer</td><td>Manuscript Chapters 1 to 3, Defense Documentation</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <footer id="sources">
-    <h2>Evidence, with context.</h2><p>Inherited references below are not a compliance determination. Current local implementation and the DILG circulars have not been confirmed.</p>
-    Republic Act 7160 (Local Government Code, Sections 447 and 458); DILG MC No. 2023-195; DILG-DOTC JMC 2007-001; DILG MC 2018-060; Republic Act 10173 (Data Privacy Act of 2012); LTO v. City of Butuan (G.R. No. 131512).
-  <p><a href="https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html" target="_blank" rel="noopener noreferrer">R.A. 7160 ↗</a> · <a href="https://privacy.gov.ph/data-privacy-act/" target="_blank" rel="noopener noreferrer">Data Privacy Act ↗</a> · <a href="https://theory.stanford.edu/~aiken/moss/" target="_blank" rel="noopener noreferrer">Stanford: similarity is not proof of plagiarism ↗</a></p><p>Obtain certified Lipa City fare and route rules before claiming compliance. Reference links do not verify a proposal’s claims; recheck source text and applicability before use.</p></footer></main></div><dialog id="dialog" aria-labelledby="dialogTitle"><button id="closeDialog" aria-label="Close dialog">×</button><div id="dialogBody"></div></dialog><input type="file" id="importFile" accept=".json,application/json" hidden>
-
-  <script src="/static/app.js" defer></script>
-</body>
-</html>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<aside class="sidebar">
+<a href="#main" class="brand"><b aria-hidden="true">c.</b><span>capstoney<small>A space for good ideas</small></span></a>
+<p class="eyebrow nav-label">YOUR WORKSPACE</p>
+<nav aria-label="Main navigation">
+<a href="#board" class="nav-board"><span aria-hidden="true">▦</span> Proposal board</a>
+<button id="compareButton"><span aria-hidden="true">⊞</span> Compare shortlist <span id="shortlistCount" class="count">0</span></button>
+<a href="#add"><span aria-hidden="true">＋</span> Add an idea</a>
+<a href="#team"><span aria-hidden="true">◎</span> Team roles</a>
+<a href="#sources"><span aria-hidden="true">≡</span> Evidence notes</a>
+</nav>
+<section class="side-note"><span class="small-mark" aria-hidden="true">↗</span><h2>One clear next step.</h2><p>Start with an idea.<br>Ask a useful question.<br>Build from there.</p></section>
+<p class="side-bottom">Gawk Capstoney<small>STI College Lipa · BSIT<br>A.Y. 2026–2027</small></p>
+</aside>
+<div class="shell">
+<header class="topbar"><p>STI College Lipa <span aria-hidden="true">/</span> <strong>Decision room</strong></p><div class="top-actions"><span id="saveStatus" role="status">Connecting…</span><button id="themeButton" class="quiet" aria-label="Switch to dark theme">Dark theme</button><button id="exportButton" class="quiet" disabled>Export</button><button id="importButton" class="quiet" disabled>Import</button></div></header>
+<main id="main" tabindex="-1">
+<noscript><p class="notice">This workspace needs JavaScript for editing and saving.</p></noscript>
+<section id="connectionError" class="notice error" hidden aria-label="Workspace save issue"><p id="errorText" role="alert"></p><div class="actions"><button id="retryButton" class="btn btn-secondary">Retry connection</button><button id="reloadButton" class="btn btn-secondary">Reload saved workspace</button></div></section>
+<header class="hero"><div><p class="eyebrow">CAPSTONE TITLE DECISION</p><h1>Make room for<br>a <em>good idea.</em></h1><p class="sub">Explore the possibilities. Find a direction worth building.<br>Gawk Capstoney · A.Y. 2026–2027</p><a class="btn" href="#add">＋ Add a proposal</a></div><section class="milestone"><span class="milestone-symbol" aria-hidden="true">↗</span><p class="eyebrow">OUR NEXT MILESTONE</p><h2>Choose a direction.</h2><time datetime="2027-01-31T23:59:59+08:00">January 31, 2027</time><p>Planning target · Philippine time<br>Review at your own pace.</p><a href="#board">Start with the proposals <span aria-hidden="true">→</span></a></section></header>
+<p class="workspace-note">Your browser-linked workspace. Reviews and shortlists are personal, not shared votes. <a href="#storage">How saving works</a></p>
+<p id="copyAlert" class="notice" role="status" hidden></p>
+<section id="board" aria-labelledby="boardHeading"><div class="section-title"><div><p class="eyebrow">THE POSSIBILITIES</p><h2 id="boardHeading">Your proposal board</h2></div><span id="proposalCount" class="muted" aria-live="polite"></span></div><div class="toolbar"><label class="search-label"><span class="sr-only">Search proposals</span><span aria-hidden="true">⌕</span><input type="search" id="searchInput" placeholder="Find an idea, topic, or keyword…"></label><label><span class="sr-only">Filter proposals</span><select id="filterInput"><option value="all">All ideas</option><option value="shortlist">Shortlisted</option><option value="reviewed">Reviewed</option><option value="custom">Your additions</option></select></label><button id="boardCompareButton" class="btn btn-secondary">Compare shortlist</button></div><div id="proposalsContainer" class="proposal-grid" aria-busy="true"></div><p class="help">Ideas, not promises. Original concepts need feasibility and outcome validation. Scores reflect your judgment, not proven results.</p></section>
+<section id="add" class="form-box" aria-labelledby="addHeading"><div class="section-title"><div><p class="eyebrow">ROOM FOR ONE MORE</p><h2 id="addHeading">Add your next idea</h2></div><span class="muted">Up to 100 custom proposals</span></div><div class="form-columns"><section class="paste-panel" aria-labelledby="pasteHeading"><h3 id="pasteHeading">Already in your notes?</h3><p>Paste a title and description. The formatter uses line labels or the first line as the title. Review the result before adding.</p><label for="smartPasteInput">Raw text or Messenger notes</label><textarea id="smartPasteInput" maxlength="10000" rows="7" placeholder="Title: Your project name&#10;Domain: Research area&#10;Summary: The problem and proposed approach"></textarea><button id="formatButton" class="btn btn-secondary">Format notes into fields</button><p class="help">A text formatter, not AI. It does not verify claims.</p></section><form id="proposalForm"><label for="newTitle">Project title <span class="muted">(required)</span></label><input id="newTitle" required maxlength="240" autocomplete="off"><label for="newDomain">Domain or category</label><input id="newDomain" maxlength="100" placeholder="General IT"><label for="newDesc">Problem and proposed approach <span class="muted">(required)</span></label><textarea id="newDesc" rows="4" required maxlength="4000"></textarea><label for="newNote">Evidence needs or context <span class="muted">(optional)</span></label><textarea id="newNote" rows="2" maxlength="2000"></textarea><p id="formError" class="form-error" role="alert"></p><button id="addButton" type="submit" class="btn" disabled>Add proposal</button></form></div></section>
+<section id="team" aria-labelledby="teamHeading"><div class="section-title"><div><p class="eyebrow">THE PEOPLE BEHIND THE PROJECT</p><h2 id="teamHeading">A place for every role</h2></div></div><p class="help">Original role reference. This table does not assign members or confirm the final project’s technology.</p><table class="roles-table"><caption class="sr-only">Team roles and primary responsibilities</caption><thead><tr><th scope="col">Role</th><th scope="col">Primary responsibility</th></tr></thead><tbody><tr><th scope="row">Lead Architect</th><td>Backend Services, PostGIS Schemas, API Gateways</td></tr><tr><th scope="row">Lead Researcher</th><td>Research Models, Detection Logic, Flow Verification</td></tr><tr><th scope="row">UI/UX Engineer</th><td>Mobile Responsive Views, Client State Management</td></tr><tr><th scope="row">Technical Writer</th><td>Manuscript Chapters 1 to 3, Defense Documentation</td></tr></tbody></table></section>
+<section id="sources" class="evidence" aria-labelledby="evidenceHeading"><p class="eyebrow">STAY CURIOUS. CHECK THE SOURCE.</p><h2 id="evidenceHeading">Evidence, with context.</h2><p>This is a proposal-review workspace, not an implementation of the four research systems. Original wording remains available on each reference proposal; preservation is not endorsement.</p><div class="evidence-grid"><article><h3>Transport & privacy</h3><p>Obtain current certified Lipa fare and route rules before claiming compliance. Citing a law does not establish that a design complies.</p><a href="https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html" target="_blank" rel="noopener noreferrer">R.A. 7160 · Local Government Code ↗</a><a href="https://privacy.gov.ph/data-privacy-act/" target="_blank" rel="noopener noreferrer">R.A. 10173 · Data Privacy Act ↗</a></article><article><h3>Similarity & research limits</h3><p>Similarity alone is not proof of plagiarism. Evaluate human review, datasets, supported languages, compiler settings, and false positives.</p><a href="https://theory.stanford.edu/~aiken/moss/" target="_blank" rel="noopener noreferrer">Stanford Moss · interpretation limits ↗</a><a href="https://llvm.org/docs/LangRef.html" target="_blank" rel="noopener noreferrer">LLVM · language reference ↗</a></article></div><details><summary>Inherited references requiring applicability checks</summary><p>DILG MC No. 2023-195; DILG-DOTC JMC 2007-001; DILG MC 2018-060; LTO v. City of Butuan (G.R. No. 131512). Current applicability has not been verified here. R.A. 7160 Sections 447 and 458 also require context-specific review.</p></details></section>
+<section id="storage" class="storage" aria-labelledby="storageHeading"><h2 id="storageHeading">Keep a copy of your thinking.</h2><p>Cloudflare D1 stores this workspace. A browser cookie is its access key, not an authenticated account. Losing the cookie, switching browsers, clearing site data, or using a different site address can disconnect you from it. Anyone using this browser profile can access it. Avoid sensitive personal data.</p><p>Export JSON backups and keep them private. Imports replace this browser’s workspace after confirmation and a pre-import backup. Browser downloads may require permission; verify your backup file exists.</p><button id="recoverButton" class="btn btn-secondary" disabled>Recover old proposals</button><p class="help">Old <code>custom_proposals_v2</code> data is only readable in the same browser and original origin. A new Cloudflare address cannot read GitHub Pages storage. Recovery never deletes the old data.</p></section>
+<footer><span class="footer-brand">capstoney.</span><p>A little clarity for the next big project.<br>Gawk Capstoney · STI College Lipa</p><a href="#main">Back to top ↑</a></footer>
+</main></div>
+<dialog id="dialog" aria-labelledby="dialogTitle"><button id="closeDialog" class="dialog-close quiet" aria-label="Close dialog">×</button><div id="dialogBody"></div><p id="dialogStatus" role="status"></p></dialog>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+</body></html>
