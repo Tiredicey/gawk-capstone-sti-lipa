@@ -1,3 +1,33 @@
+## Recovery checkpoint: application overhaul in progress
+
+The existing GitHub Pages homepage (`index.html`) is preserved unchanged.
+The new Hono/Cloudflare application lives in `src/`, with its HTML in
+`src/page.html` and static assets in `public/static/`.
+
+**Status:** foundation restored; frontend handlers, visual overhaul, dependency
+installation, build, and runtime tests are not yet complete. Do not treat this
+checkpoint as a finished or production-ready app.
+
+- Authored backend: browser-scoped Cloudflare D1 workspace, input validation,
+  optimistic revision checks, and same-origin write protection.
+- Intended routes: `GET /`, `GET /api/workspace`, `PUT /api/workspace`,
+  `GET /api/health`, and `/static/*`.
+- Model: custom proposals, up to four shortlisted IDs, four optional review
+  scores and notes per proposal, and light/dark preference.
+- D1 migration: `migrations/0001_workspace.sql`. The database ID in
+  `wrangler.jsonc` is for local development only, not a provisioned production DB.
+- No production deployment has been performed. GitHub Pages cannot run the
+  Hono API or D1 backend. Existing site:
+  https://tiredicey.github.io/gawk-capstone-sti-lipa/
+- Next: finish the client, install dependencies, build, apply local migration,
+  start preview, run workflow/accessibility checks, and push the next checkpoint.
+- Original proposal text remains below and in `src/original.json` for reference.
+  Its performance/compliance claims are unverified concepts, not established results.
+  The original “0:00 PM Today” deadline below is inconsistent; the source HTML
+  uses January 31, 2027. The new app uses that date in Philippine time.
+
+---
+
 # STI College Lipa - BSIT Capstone Project (A.Y. 2026-2027)
 **Group Name:** Gawk Capstoney  
 **Program:** Bachelor of Science in Information Technology  

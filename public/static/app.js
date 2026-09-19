@@ -1,0 +1,35 @@
+
+    const TARGET_DATE = new Date('2027-01-31T23:59:59+08:00');
+    const MESSENGER_THREAD_URL = 'https://www.facebook.com/messages/t/1629525598528599';
+
+    const DEFAULT_PROPOSALS = [
+      {
+        id: 'default-1',
+        title: 'TricyRoute Lipa: Ordinance-Compliant Dispatch and Fare Auditing Engine',
+        domain: 'Municipal Transport',
+        desc: 'Automated dispatch and fare calculation layer. Deters passenger overcharging through tamper-evident digital receipts, checks routes against local MTOP boundaries, and blocks transit on restricted national highways.',
+        note: 'Regulatory anchor: R.A. 7160 Sec. 458, DILG MC 2023-195, and R.A. 10173 data privacy rules. Requires certified Lipa City fare ordinance.'
+      },
+      {
+        id: 'default-2',
+        title: 'CodeProvenance: AST and Git Telemetry Engine',
+        domain: 'AST Code Analysis',
+        desc: 'Evaluates Git commit cadence and builds Abstract Syntax Trees to detect structural source code plagiarism even when variable names, comments, and file names change.',
+        note: 'Academic focus: Static source tree comparison without runtime execution overhead.'
+      },
+      {
+        id: 'default-3',
+        title: 'ByteCheck: Compiler Bytecode and Intermediate Representation Matcher',
+        domain: 'Binary Analysis',
+        desc: 'Compares compiled bytecode formats (Java Bytecode and LLVM IR) to identify refactored plagiarism across compiled student projects.',
+        note: 'Academic focus: Neutralizes cosmetic refactoring at the compiler optimization stage.'
+      },
+      {
+        id: 'default-4',
+        title: 'AlgoGuard: Control-Flow Graph Similarity Scanner',
+        domain: 'Logic Path Analysis',
+        desc: 'Constructs program execution control-flow graphs (CFGs) to detect algorithmic theft translated across different programming languages.',
+        note: 'Academic focus: Language-agnostic logic path isomorphism.'
+      }
+    ];
+

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="STI College Lipa BSIT Capstone Title Decision Hub for Group Gawk Capstoney">
+  <meta property="og:title" content="Capstone Title Decision | STI College Lipa">
+  <meta property="og:description" content="Review candidate proposals, check regulatory compliance, and cast votes.">
+  <link rel="icon" href="/static/favicon.svg"><text y='.9em' font-size='90'>🎓</text></svg>">
+  <title>Gawk Capstoney | STI College Lipa</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body><a class="skip" href="#main">Skip to content</a><aside class="sidebar"><a href="#main" class="brand"><b>c.</b><span>capstoney<small>A space for good ideas</small></span></a><p class="eyebrow">YOUR WORKSPACE</p><nav aria-label="Main navigation"><a href="#board">Proposal board</a><button id="compareButton">Compare shortlist</button><a href="#add">Add an idea</a><a href="#team">Team roles</a><a href="#sources">Evidence notes</a></nav><section class="side-note"><h2>One clear next step.</h2><p>Start with an idea. Ask a useful question. Build from there.</p></section><div class="side-bottom"><button id="themeButton">Switch appearance</button><p>Gawk Capstoney<small>STI College Lipa · BSIT</small></p></div></aside><div class="shell"><div class="topbar"><span>STI College Lipa / <strong>Decision room</strong></span><div><span id="saveStatus" role="status">Connecting…</span><button id="exportButton" class="btn btn-secondary">Export</button><button id="importButton" class="btn btn-secondary">Import</button></div></div><main id="main" tabindex="-1">
+
+  <header class="hero"><div>
+    <div class="badge">STI COLLEGE LIPA</div>
+    <h1>Make room for<br>a <em>good idea.</em></h1>
+    <p class="sub">Find the project worth building, together.<br>Gawk Capstoney · A.Y. 2026–2027</p><a class="btn hero-button" href="#add">＋ Add a proposal</a>
+  </div><section class="timer-box">
+    <div class="timer-title">OUR NEXT MILESTONE</div><h2>Choose a direction.</h2><p>January 31, 2027</p><div class="timer-title">Planning target · Philippine time</div>
+    <div class="timer-digits" id="countdown">Calculating...</div>
+    </section></header>
+
+  <div id="copyAlert" class="alert-box" role="status"></div>
+
+  <section id="board"><div class="section-title"><div><p class="eyebrow">THE POSSIBILITIES</p><h2>Your proposal board</h2></div><span id="proposalCount"></span></div><div class="toolbar"><label><span class="sr-only">Search proposals</span><input type="search" id="searchInput" placeholder="Find an idea…"></label><label><span class="sr-only">Filter proposals</span><select id="filterInput"><option value="all">All ideas</option><option value="shortlist">Shortlisted</option></select></label><button class="btn btn-secondary" id="recoverButton">Recover old proposals</button></div>
+
+  <div id="proposalsContainer" aria-busy="true"></div><p class="help">Ideas, not promises. These concepts need feasibility and outcome validation.</p></section>
+
+  <section class="form-box" id="add">
+    <div class="section-title">
+      <span>Add your next idea</span>
+    </div>
+    <div class="form-group">
+      <label for="smartPasteInput">Paste Raw Messenger Text or Notes</label>
+      <textarea id="smartPasteInput" maxlength="5000" class="form-control" rows="4" placeholder="Example:
+CodeProvenance (AST + Git Telemetry)
+Parses source code into AST trees to detect logic cloning."></textarea>
+    </div>
+    <button type="button" class="btn btn-secondary">Format notes into fields</button>
+
+    <details id="manualFields" open>
+      <summary>Review or fill out the fields</summary>
+      <form id="proposalForm">
+        <div class="form-group">
+          <label for="newTitle">Project Title</label>
+          <input type="text" id="newTitle" required maxlength="240" class="form-control" placeholder="Example: AgriGuard Lipa">
+        </div>
+        <div class="form-group">
+          <label for="newDomain">Domain / Category</label>
+          <input type="text" id="newDomain" maxlength="100" class="form-control" placeholder="Example: Agriculture / Computer Vision">
+        </div>
+        <div class="form-group">
+          <label for="newDesc">Summary and Problem Solved</label>
+          <textarea id="newDesc" required maxlength="4000" class="form-control" rows="2" placeholder="Describe what problem this solves..."></textarea>
+        </div>
+        <button type="submit" class="btn">Add Manual Proposal</button>
+      </form>
+    </details>
+  </section>
+
+  <div class="section-title">
+    <h2 id="team">Team roles</h2>
+  </div>
+  <div class="card">
+    <table class="roles-table">
+      <thead>
+        <tr><th>Role</th><th>Primary Responsibility</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Lead Architect</td><td>Backend Services, PostGIS Schemas, API Gateways</td></tr>
+        <tr><td>Lead Researcher</td><td>Research Models, Detection Logic, Flow Verification</td></tr>
+        <tr><td>UI/UX Engineer</td><td>Mobile Responsive Views, Client State Management</td></tr>
+        <tr><td>Technical Writer</td><td>Manuscript Chapters 1 to 3, Defense Documentation</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer id="sources">
+    <h2>Evidence, with context.</h2><p>Inherited references below are not a compliance determination. Current local implementation and the DILG circulars have not been confirmed.</p>
+    Republic Act 7160 (Local Government Code, Sections 447 and 458); DILG MC No. 2023-195; DILG-DOTC JMC 2007-001; DILG MC 2018-060; Republic Act 10173 (Data Privacy Act of 2012); LTO v. City of Butuan (G.R. No. 131512).
+  <p><a href="https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html" target="_blank" rel="noopener noreferrer">R.A. 7160 ↗</a> · <a href="https://privacy.gov.ph/data-privacy-act/" target="_blank" rel="noopener noreferrer">Data Privacy Act ↗</a> · <a href="https://theory.stanford.edu/~aiken/moss/" target="_blank" rel="noopener noreferrer">Stanford: similarity is not proof of plagiarism ↗</a></p><p>Obtain certified Lipa City fare and route rules before claiming compliance. Source texts reviewed September 19, 2026; recheck applicability before use.</p></footer></main></div><dialog id="dialog" aria-labelledby="dialogTitle"><button id="closeDialog" aria-label="Close dialog">×</button><div id="dialogBody"></div></dialog><input type="file" id="importFile" accept=".json,application/json" hidden>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
