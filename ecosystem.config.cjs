@@ -1,1 +1,1 @@
-module.exports={apps:[{name:'webapp',script:'npx',args:'wrangler pages dev dist --ip 0.0.0.0 --port 3000',cwd:'/home/user/webapp',watch:false,instances:1,exec_mode:'fork'}]};
+module.exports = {apps: [{name: 'webapp', script: 'bash', args: ['-lc', 'npm run db:migrate:local && exec npx wrangler pages dev dist --ip 0.0.0.0 --port 3000'], cwd: '/home/user/webapp', watch: false, instances: 1, exec_mode: 'fork', restart_delay: 3000}]};
