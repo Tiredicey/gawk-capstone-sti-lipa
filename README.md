@@ -1,40 +1,29 @@
-## Foundation repair checkpoint
+# Capstoney decision room
 
-Inspected local and remote `main` at `9c1a5b6`. Repaired malformed favicon HTML,
-removed misleading compliance/vote metadata and countdown placeholder, added the
-favicon asset, and tracked the existing dependency lock. The original root
-`index.html` remains unchanged. Frontend completion and runtime tests are still
-pending; this is a source checkpoint, not a production release.
+## Current status
+Implemented and locally tested at `531c0bb`. Not production-deployed. Original root `index.html` remains unchanged from `9c1a5b6`.
 
-## Recovery checkpoint: application overhaul in progress
+## Completed features
+Search/filter, manual proposals, editable paste formatting, duplicate checks, confirmed removal, four-item shortlist, comparison/print, optional scores and notes, D1 autosaving, conflict handling, validated backup/import with pre-import backup, explicit legacy recovery, honest vote-message copying/sharing, mobile light/dark controls and keyboard dialogs. Original proposals and team roles are preserved. Overall score is sum divided by four only when all four scores are present. Target: January 31, 2027, Philippine time.
 
-The existing GitHub Pages homepage (`index.html`) is preserved unchanged.
-The new Hono/Cloudflare application lives in `src/`, with its HTML in
-`src/page.html` and static assets in `public/static/`.
+## Routes and storage
+`GET /`, `GET /api/workspace`, `PUT /api/workspace`, `GET /api/health`, `/static/*`. PUT accepts `{state,revision}` and requires a workspace cookie, same Origin and `X-Workspace-Request: 1`. D1 stores hashed browser-token IDs, JSON state and revisions. State contains version, custom proposals, shortlist, reviews and theme. Limits: 100 custom proposals, four shortlist entries and 256 KiB state/request budget.
 
-**Status:** foundation restored; frontend handlers, visual overhaul, dependency
-installation, build, and runtime tests are not yet complete. Do not treat this
-checkpoint as a finished or production-ready app.
+## Run and test
+Node 22: `npm ci`, `npm run build`, `pm2 start ecosystem.config.cjs`. Local preview: http://localhost:3000. Startup applies local D1 migrations. Install tests with `npx playwright install --with-deps chromium`, then run `npm test`.
 
-- Authored backend: browser-scoped Cloudflare D1 workspace, input validation,
-  optimistic revision checks, and same-origin write protection.
-- Intended routes: `GET /`, `GET /api/workspace`, `PUT /api/workspace`,
-  `GET /api/health`, and `/static/*`.
-- Model: custom proposals, up to four shortlisted IDs, four optional review
-  scores and notes per proposal, and light/dark preference.
-- D1 migration: `migrations/0001_workspace.sql`. The database ID in
-  `wrangler.jsonc` is for local development only, not a provisioned production DB.
-- No production deployment has been performed. GitHub Pages cannot run the
-  Hono API or D1 backend. Existing site:
-  https://tiredicey.github.io/gawk-capstone-sti-lipa/
-- Next: finish the client, install dependencies, build, apply local migration,
-  start preview, run workflow/accessibility checks, and push the next checkpoint.
-- Original proposal text remains below and in `src/original.json` for reference.
-  Its performance/compliance claims are unverified concepts, not established results.
-  The original “0:00 PM Today” deadline below is inconsistent; the source HTML
-  uses January 31, 2027. The new app uses that date in Philippine time.
+Observed at `531c0bb`: 7 model/API and 15 browser groups passed twice in Chromium/Linux. Coverage includes persistence, validation, XSS escaping, cookie isolation, stale tabs, backups, recovery, network failures, sharing cancellation and keyboard focus. Axe checks passed for tested light/dark page states; no document overflow at 320/375/768/1024/1440 CSS pixels. Comparison PDF content was checked. Artifacts regenerate under ignored `test-results/`. This is not security or accessibility certification; physical devices, screen readers, other browsers and production load remain unverified. Share/clipboard tests inject outcomes, not real message delivery.
 
----
+## Use and limitations
+Wait for Saved to D1, review ideas, shortlist, compare, and export backups. On errors keep the page open, export your draft, then retry or confirm reload. Backups exclude unfinished add-form fields. Workspaces are browser-linked, not authenticated accounts or team collaboration. Cookie loss or changing browsers/origins can disconnect your workspace. Sandbox resets can lose preview data. Legacy recovery requires the original browser and origin. Avoid sensitive data.
+
+Production hosting remains unselected. Choose Genspark-managed Cloudflare or your own account before provisioning D1 and deployment. GitHub Pages cannot run Hono/D1; the configured database ID is local-only. No shared vote tally, authenticated collaboration, research detectors or durable offline drafts exist. Review abuse controls and retention before production.
+
+Repository: https://github.com/Tiredicey/gawk-capstone-sti-lipa
+Original site: https://tiredicey.github.io/gawk-capstone-sti-lipa/
+
+## Inherited reference below
+Historical wording is retained, not endorsed. Capability claims and the old Today deadline below are unverified/superseded; use the Philippine-time target above. Current Lipa rules and DILG/court applicability need verification.
 
 # STI College Lipa - BSIT Capstone Project (A.Y. 2026-2027)
 **Group Name:** Gawk Capstoney  
