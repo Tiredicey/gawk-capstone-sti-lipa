@@ -22,14 +22,6 @@ Production path selected: your own Cloudflare account through GitHub Actions. De
 Repository: https://github.com/Tiredicey/gawk-capstone-sti-lipa
 Original site: https://tiredicey.github.io/gawk-capstone-sti-lipa/
 
-## GitHub deployment setup
-The inactive template is `cloudflare-deploy.yml` at the repository root. The connected GitHub App cannot create workflows. As repository owner:
-1. Edit that file in GitHub. Rename it to `.github/workflows/cloudflare-deploy.yml` and commit on main. Do not change its contents.
-2. Open Settings → Secrets and variables → Actions → New repository secret. Save `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` separately. Never paste credentials into source files. Token permissions: Cloudflare Pages Edit and D1 Edit for your account.
-3. Open Actions → Publish Capstoney to Cloudflare → Run workflow. Select main, check the confirmation and run. The workflow creates/uses the dedicated Pages project and D1 database, migrates, builds, publishes and checks health. Successful run summary contains the actual site URL.
-4. For future updates, run the same workflow after changes reach main.
-YAML and embedded Node syntax were checked; live deployment remains untested. Other Cloudflare sites and the original GitHub Pages homepage are not targeted. Check resource limits and billing in your account. If any step fails, inspect its error before retrying.
-
 ## Inherited reference below
 Historical wording is retained, not endorsed. Capability claims and the old Today deadline below are unverified/superseded; use the Philippine-time target above. Current Lipa rules and DILG/court applicability need verification.
 
