@@ -1,3 +1,11 @@
+## Foundation repair checkpoint
+
+Inspected local and remote `main` at `9c1a5b6`. Repaired malformed favicon HTML,
+removed misleading compliance/vote metadata and countdown placeholder, added the
+favicon asset, and tracked the existing dependency lock. The original root
+`index.html` remains unchanged. Frontend completion and runtime tests are still
+pending; this is a source checkpoint, not a production release.
+
 ## Recovery checkpoint: application overhaul in progress
 
 The existing GitHub Pages homepage (`index.html`) is preserved unchanged.
