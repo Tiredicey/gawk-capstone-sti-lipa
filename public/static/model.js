@@ -111,3 +111,25 @@ export function recoverLegacy(input, state) {
   return {state: validateWorkspace(next), added: next.custom.length - state.custom.length, skipped};
 }
 
+
+export function selectProposals(state, {search = '', filter = 'all', sort = 'original'} = {}) {
+  const query = normalizeTitle(search);
+  const proposals = [...DEFAULT_PROPOSALS, ...state.custom].filter(p => {
+    const review = state.reviews[p.id], c = CONCEPTS[p.id];
+    const content = [p.title, p.domain, p.desc, p.note, c?.name, c?.desc, c?.question, review?.notes].filter(Boolean).join(' ');
+    return normalizeTitle(content).includes(query) && (filter === 'all'
+      || filter === 'shortlist' && state.shortlist.includes(p.id)
+      || filter === 'custom' && p.id.startsWith('custom-')
+      || filter === 'reviewed' && !!(review?.notes.trim() || review?.scores.some(n => n !== null))
+      || filter === 'unscored' && overallScore(review?.scores) === null);
+  });
+  if (sort === 'title') proposals.sort((a, b) => (CONCEPTS[a.id]?.name || a.title).localeCompare(CONCEPTS[b.id]?.name || b.title, 'en', {sensitivity: 'base', numeric: true}));
+  if (sort === 'score') proposals.sort((a, b) => (overallScore(state.reviews[b.id]?.scores) ?? -1) - (overallScore(state.reviews[a.id]?.scores) ?? -1));
+  return proposals;
+}
+export function assessmentProgress(state) {
+  const all = [...DEFAULT_PROPOSALS, ...state.custom];
+  const complete = all.filter(p => overallScore(state.reviews[p.id]?.scores) !== null).length;
+  const candidates = [...state.shortlist, ...all.map(p => p.id)];
+  return {complete, total: all.length, next: candidates.find(id => overallScore(state.reviews[id]?.scores) === null) || null};
+}

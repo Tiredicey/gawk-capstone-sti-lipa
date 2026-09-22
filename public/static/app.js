@@ -1,15 +1,15 @@
-import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy} from './model.js';
+import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, selectProposals, assessmentProgress} from './model.js';
 
 const $ = id => document.getElementById(id);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 let state = emptyState(), revision = 0, ready = false, dirty = false, generation = 0, saving = null, saveTimer, blocked = false;
-let returnFocus = null;
+let returnFocus = null, editDirty = false;
 const allProposals = () => [...DEFAULT_PROPOSALS, ...state.custom];
 const concept = p => CONCEPTS[p.id] || {name: p.title, desc: p.desc, question: p.note || 'What would you need to validate this idea?'};
 const reviewFor = id => state.reviews[id] || {scores: [null, null, null, null], notes: ''};
 const scoreLabel = id => { const score = overallScore(reviewFor(id).scores); return score === null ? 'Not fully scored' : `${score.toFixed(2)} / 5`; };
 const status = message => { $('saveStatus').textContent = message; };
-function notify(message) { $('copyAlert').textContent = message; $('copyAlert').hidden = false; }
+function notify(message) { $('copyAlert').textContent = message; $('noticeRegion').hidden = false; }
 function showError(message) { $('connectionError').hidden = false; $('errorText').textContent = message; }
 async function request(url, options = {}) {
   const response = await fetch(url, {...options, signal: AbortSignal.timeout(15000), credentials: 'same-origin'});
@@ -73,28 +73,35 @@ async function save() {
 }
 function render() {
   const focused = document.activeElement, focusId = focused?.dataset.id, focusAction = focused?.dataset.action;
-  const search = $('searchInput').value.trim().toLocaleLowerCase(), filter = $('filterInput').value;
   const all = allProposals();
-  const shown = all.filter(p => {
-    const review = reviewFor(p.id), c = concept(p);
-    return `${p.title} ${p.domain} ${c.desc} ${p.desc}`.toLocaleLowerCase().includes(search) && (filter === 'all' || filter === 'shortlist' && state.shortlist.includes(p.id) || filter === 'custom' && p.id.startsWith('custom-') || filter === 'reviewed' && (review.notes.trim() || review.scores.some(n => n !== null)));
-  });
+  const shown = selectProposals(state, {search: $('searchInput').value, filter: $('filterInput').value, sort: $('sortInput').value});
+  const progress = assessmentProgress(state);
+  $('progressSummary').textContent = ready ? `${progress.complete} of ${progress.total} ideas fully scored` : 'Connect to see your assessment progress.';
+  $('reviewProgress').max = progress.total;
+  $('reviewProgress').value = ready ? progress.complete : 0;
+  $('shortlistSummary').textContent = ready ? `${state.shortlist.length} of 4 comparison spaces used` : 'Connect to see your shortlist.';
+  $('nextReviewButton').disabled = !ready;
+  $('nextReviewButton').textContent = progress.next ? 'Continue reviewing ↗' : 'Compare your shortlist ↗';
   $('proposalCount').textContent = `${shown.length} of ${all.length} ideas`;
   $('shortlistCount').textContent = state.shortlist.length;
   $('proposalsContainer').setAttribute('aria-busy', 'false');
   $('proposalsContainer').innerHTML = shown.length ? shown.map(p => {
     const c = concept(p), selected = state.shortlist.includes(p.id), custom = p.id.startsWith('custom-');
-    return `<article class="proposal-card${selected ? ' is-shortlisted' : ''}" aria-labelledby="title-${p.id}"><div class="card-top"><span class="proposal-number">${String(all.indexOf(p) + 1).padStart(2, '0')}</span><span class="domain">${escape(p.domain)}</span><button class="shortlist-toggle" data-action="shortlist" data-id="${p.id}" aria-pressed="${selected}" aria-label="${selected ? 'Remove' : 'Add'} ${escape(c.name)} ${selected ? 'from' : 'to'} shortlist" ${!ready ? 'disabled' : ''}>${selected ? '✓' : '＋'}</button></div><h3 id="title-${p.id}">${escape(c.name)}</h3><p class="card-description">${escape(c.desc)}</p><p class="research-question"><span>${custom ? 'YOUR CONTEXT' : 'A QUESTION TO EXPLORE'}</span>${escape(c.question)}</p><div class="card-meta"><span>${custom ? 'Your proposal' : 'Reference concept'}</span><span>${scoreLabel(p.id)}</span></div><div class="card-actions"><button class="btn btn-secondary" data-action="review" data-id="${p.id}">Review idea <span aria-hidden="true">↗</span></button><button class="quiet" data-action="share" data-id="${p.id}">Prepare vote</button>${custom ? `<button class="quiet danger" data-action="remove" data-id="${p.id}" ${!ready ? 'disabled' : ''}>Remove</button>` : ''}</div></article>`;
+    return `<article class="proposal-card${selected ? ' is-shortlisted' : ''}" data-tone="${all.findIndex(item => item.id === p.id) % 4}" aria-labelledby="title-${p.id}"><div class="card-top"><span class="proposal-number">${String(all.findIndex(item => item.id === p.id) + 1).padStart(2, '0')}</span><span class="domain">${escape(p.domain)}</span><button class="shortlist-toggle" data-action="shortlist" data-id="${p.id}" aria-pressed="${selected}" aria-label="${selected ? 'Remove' : 'Add'} ${escape(c.name)} ${selected ? 'from' : 'to'} shortlist" ${!ready ? 'disabled' : ''}>${selected ? '✓' : '＋'}</button></div><h3 id="title-${p.id}">${escape(c.name)}</h3><p class="card-description">${escape(c.desc)}</p><p class="research-question"><span>${custom ? 'YOUR CONTEXT' : 'A QUESTION TO EXPLORE'}</span>${escape(c.question)}</p><div class="card-meta"><span>${custom ? 'Your proposal' : 'Reference concept'}</span><span>${scoreLabel(p.id)}</span></div><div class="card-actions"><button class="btn btn-secondary" data-action="review" data-id="${p.id}">Review idea <span aria-hidden="true">↗</span></button><button class="quiet" data-action="share" data-id="${p.id}">Prepare vote</button>${custom ? `<button class="quiet" data-action="edit" data-id="${p.id}" ${!ready ? 'disabled' : ''}>Edit</button><button class="quiet danger" data-action="remove" data-id="${p.id}" ${!ready ? 'disabled' : ''}>Remove</button>` : ''}</div></article>`;
   }).join('') : '<section class="empty-state"><h3>No matching ideas</h3><p>Try another keyword or view all ideas.</p><button class="btn btn-secondary" data-action="reset">Clear filters</button></section>';
   if (focusId && focusAction) [...document.querySelectorAll('[data-action]')].find(el => el.dataset.id === focusId && el.dataset.action === focusAction)?.focus({preventScroll: true});
 }
 function openDialog(title, body, className = '') {
-  returnFocus = document.activeElement;
+  returnFocus = document.activeElement; editDirty = false;
   $('dialog').className = className;
   $('dialogBody').innerHTML = `<h2 id="dialogTitle" tabindex="-1">${escape(title)}</h2>${body}`;
-  $('dialogStatus').textContent = ''; $('dialog').showModal(); $('dialogTitle').focus();
+  $('dialogStatus').textContent = ''; $('dialog').showModal(); $('dialogTitle').focus(); syncMotion();
 }
-function closeDialog() { $('dialog').close(); }
+function closeDialog() {
+  if (editDirty && !window.confirm('Discard unsaved proposal edits? Your saved proposal will stay unchanged.')) return;
+  editDirty = false; $('dialog').close();
+}
+$('dialog').addEventListener('cancel', event => { event.preventDefault(); closeDialog(); });
 $('dialog').addEventListener('keydown', event => {
   if (event.key !== 'Tab') return;
   const controls = [...$('dialog').querySelectorAll('button, a[href], input, select, textarea, summary, [tabindex]')].filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length);
@@ -104,6 +111,7 @@ $('dialog').addEventListener('keydown', event => {
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 });
 $('dialog').addEventListener('close', () => {
+  syncMotion();
   let target = returnFocus;
   if (!target?.isConnected && target?.dataset.id) target = [...document.querySelectorAll('[data-action]')].find(el => el.dataset.id === returnFocus.dataset.id && el.dataset.action === returnFocus.dataset.action);
   target = target?.isConnected ? target : $('boardHeading');
@@ -126,6 +134,23 @@ function openReview(id) {
   $('reviewNotes').addEventListener('input', update);
   $('saveReview').onclick = async () => { await save(); $('dialogStatus').textContent = dirty ? 'Not saved. Your draft remains open; see the workspace save issue.' : 'Review saved to D1.'; };
   $('doneReview').onclick = closeDialog;
+}
+function openEdit(id) {
+  const proposal = state.custom.find(p => p.id === id);
+  if (!ready || !proposal) return;
+  openDialog('Refine your proposal', `<p>Keep the same idea, shortlist entry, and review. Edits only apply when you choose Update proposal.</p><form id="editProposalForm"><label for="editTitle">Project title (required)</label><input id="editTitle" required maxlength="240" value="${escape(proposal.title)}"><label for="editDomain">Domain or category</label><input id="editDomain" maxlength="100" value="${escape(proposal.domain)}"><label for="editDescription">Problem and proposed approach (required)</label><textarea id="editDescription" required maxlength="4000" rows="5">${escape(proposal.desc)}</textarea><label for="editContext">Evidence needs or context</label><textarea id="editContext" maxlength="2000" rows="3">${escape(proposal.note)}</textarea><p id="editError" class="form-error" role="alert"></p><div class="actions"><button class="btn" type="submit">Update proposal</button><button id="cancelEdit" class="btn btn-secondary" type="button">Cancel</button></div></form>`);
+  $('editProposalForm').addEventListener('input', () => { editDirty = true; });
+  $('cancelEdit').onclick = closeDialog;
+  $('editProposalForm').onsubmit = async event => {
+    event.preventDefault();
+    const updated = {id, title: $('editTitle').value.trim(), domain: $('editDomain').value.trim() || 'General IT', desc: $('editDescription').value.trim(), note: $('editContext').value.trim()};
+    try { validateWorkspace({...state, custom: state.custom.map(p => p.id === id ? updated : p)}); }
+    catch (error) { $('editError').textContent = error.message; return; }
+    if (mutate(next => { next.custom = next.custom.map(p => p.id === id ? updated : p); })) {
+      editDirty = false; closeDialog(); await save();
+      notify(dirty ? 'Proposal updated in your draft. Saving needs attention; export before leaving.' : 'Proposal updated and saved to D1. Your review and shortlist were preserved.');
+    }
+  };
 }
 function openCompare() {
   const selected = state.shortlist.map(id => allProposals().find(p => p.id === id));
@@ -198,6 +223,7 @@ $('proposalsContainer').addEventListener('click', event => {
   const {action, id} = button.dataset;
   if (action === 'reset') { $('searchInput').value = ''; $('filterInput').value = 'all'; render(); $('searchInput').focus(); }
   if (action === 'review') openReview(id);
+  if (action === 'edit') openEdit(id);
   if (action === 'share') openShare(id);
   if (action === 'shortlist') mutate(next => { next.shortlist = next.shortlist.includes(id) ? next.shortlist.filter(value => value !== id) : [...next.shortlist, id]; });
   if (action === 'remove') confirmAction('Remove this proposal?', 'Its review and shortlist entry will also be removed. Export a backup first if you want to keep them.', 'Remove proposal', async () => {
@@ -224,12 +250,43 @@ $('formatButton').onclick = () => {
 };
 $('closeDialog').onclick = closeDialog;
 $('compareButton').onclick = $('boardCompareButton').onclick = openCompare;
-$('searchInput').oninput = $('filterInput').onchange = render;
+$('searchInput').oninput = $('filterInput').onchange = $('sortInput').onchange = render;
+$('nextReviewButton').onclick = () => { const next = assessmentProgress(state).next; if (next) openReview(next); else openCompare(); };
+$('dismissNotice').onclick = () => { $('noticeRegion').hidden = true; $('boardHeading').tabIndex = -1; $('boardHeading').focus({preventScroll: true}); };
 $('themeButton').onclick = () => { if (ready) mutate(next => next.theme = next.theme === 'light' ? 'dark' : 'light'); else { state.theme = state.theme === 'light' ? 'dark' : 'light'; applyTheme(); notify('Theme changed for this view only. Connect to save your preference.'); } };
 $('exportButton').onclick = () => { downloadBackup(); notify('Backup download requested, including your local workspace draft. Unsaved add-form fields are not included. Verify the file in your downloads.'); };
 $('importButton').onclick = () => $('importFile').click();
 $('recoverButton').onclick = openRecovery;
 $('retryButton').onclick = async () => { if (!ready) await load(); else await save(); };
 $('reloadButton').onclick = () => confirmAction('Reload the saved workspace?', 'This discards your unsaved local workspace changes. Export your draft first. Unsaved proposal form fields remain on this page.', 'Reload saved workspace', async () => { await saving; clearTimeout(saveTimer); closeDialog(); await load(); });
-window.addEventListener('beforeunload', event => { if (dirty || ['newTitle', 'newDomain', 'newDesc', 'newNote', 'smartPasteInput'].some(id => $(id).value.trim())) { event.preventDefault(); event.returnValue = ''; } });
-render(); load();
+window.addEventListener('beforeunload', event => { if (dirty || editDirty || ['newTitle', 'newDomain', 'newDesc', 'newNote', 'smartPasteInput'].some(id => $(id).value.trim())) { event.preventDefault(); event.returnValue = ''; } });
+const ambient = $('ambientVideo'), motionButton = $('motionButton');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const connection = navigator.connection;
+let motionWanted = !reducedMotion.matches && !connection?.saveData, mediaVisible = false, mediaFailed = false;
+function updateMotionControl() {
+  const restricted = reducedMotion.matches || connection?.saveData;
+  motionButton.disabled = !!restricted || mediaFailed;
+  motionButton.textContent = mediaFailed ? 'Motion unavailable' : restricted ? 'Motion off · device preference' : !ambient.paused ? 'Pause motion' : 'Play motion';
+  motionButton.setAttribute('aria-pressed', String(!ambient.paused));
+}
+function syncMotion() {
+  const shouldPlay = motionWanted && mediaVisible && !document.hidden && !$('dialog').open && !reducedMotion.matches && !connection?.saveData && !mediaFailed;
+  if (!shouldPlay) { ambient.pause(); updateMotionControl(); return; }
+  if (!ambient.hasAttribute('src')) ambient.src = '/static/idea-orbit.mp4';
+  ambient.play().catch(error => {
+    if (error.name !== 'AbortError') { motionWanted = false; updateMotionControl(); }
+  });
+}
+motionButton.onclick = () => { motionWanted = ambient.paused; syncMotion(); };
+ambient.addEventListener('play', updateMotionControl);
+ambient.addEventListener('pause', updateMotionControl);
+ambient.addEventListener('error', () => { mediaFailed = true; ambient.pause(); updateMotionControl(); });
+reducedMotion.addEventListener('change', () => { if (reducedMotion.matches) motionWanted = false; syncMotion(); });
+connection?.addEventListener('change', () => { if (connection.saveData) motionWanted = false; syncMotion(); });
+document.addEventListener('visibilitychange', syncMotion);
+window.addEventListener('pagehide', () => ambient.pause());
+window.addEventListener('pageshow', syncMotion);
+if ('IntersectionObserver' in window) new IntersectionObserver(entries => { mediaVisible = entries[0].isIntersecting; syncMotion(); }, {threshold: 0}).observe(ambient);
+else { mediaVisible = true; syncMotion(); }
+updateMotionControl(); render(); load();

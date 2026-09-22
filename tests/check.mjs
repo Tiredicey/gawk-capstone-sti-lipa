@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
-import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE} from '../public/static/model.js';
+import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE, selectProposals, assessmentProgress} from '../public/static/model.js';
 const base = 'http://localhost:3000';
 let count = 0;
 async function test(name, fn) { await fn(); console.log(`PASS ${++count}: ${name}`); }
@@ -41,6 +41,34 @@ await test('Formatter and backup round-trip; legacy does not mutate source', () 
   const old=[proposal(),proposal('custom-two','STUDY')], raw=JSON.stringify(old), initial=emptyState();
   const recovered=recoverLegacy(old,initial); assert.equal(recovered.added,1); assert.equal(recovered.skipped,1);
   assert.equal(JSON.stringify(old),raw); assert.deepEqual(initial,emptyState());
+});
+await test('Search context and notes; stable sorting keeps unknowns last', () => {
+  const s = {...emptyState(), custom: [proposal('custom-a', 'Alpha')], reviews: {
+    'default-1': {scores: [4,4,4,4], notes: 'City permit interview'},
+    'default-2': {scores: [5,null,null,null], notes: ''},
+    'default-3': {scores: [4,4,4,4], notes: ''},
+    'custom-a': {scores: [5,5,5,5], notes: ''}
+  }};
+  const original = structuredClone(s);
+  assert.deepEqual(selectProposals(s, {search: 'CITY   PERMIT'}).map(p => p.id), ['default-1']);
+  assert.deepEqual(selectProposals(s, {search: 'certified Lipa'}).map(p => p.id), ['default-1']);
+  assert.deepEqual(selectProposals(s, {sort: 'score'}).map(p => p.id), ['custom-a','default-1','default-3','default-2','default-4']);
+  assert.deepEqual(selectProposals(s, {sort: 'title'}).map(p => p.id), ['default-4','custom-a','default-3','default-2','default-1']);
+  assert.deepEqual(selectProposals(s, {filter: 'unscored'}).map(p => p.id), ['default-2','default-4']);
+  assert.equal(selectProposals(s, {filter: 'reviewed'}).length, 4);
+  assert.equal(selectProposals(s, {filter: 'shortlist'}).length, 0);
+  assert.deepEqual(s, original);
+});
+await test('Progress counts complete assessments and prioritizes shortlist', () => {
+  const s = emptyState();
+  assert.deepEqual(assessmentProgress(s), {complete:0,total:4,next:'default-1'});
+  s.shortlist = ['default-3'];
+  s.reviews['default-3'] = {scores:[5,null,null,null],notes:'Not complete'};
+  assert.deepEqual(assessmentProgress(s), {complete:0,total:4,next:'default-3'});
+  for (const p of DEFAULT_PROPOSALS) s.reviews[p.id] = {scores:[1,1,1,1],notes:''};
+  assert.deepEqual(assessmentProgress(s), {complete:4,total:4,next:null});
+  s.custom.push(proposal());
+  assert.deepEqual(assessmentProgress(s), {complete:4,total:5,next:'custom-test'});
 });
 let cookie, initial;
 const get = async () => (await fetch(base+'/api/workspace',{headers:cookie?{Cookie:cookie}:{}})).json();

@@ -96,6 +96,55 @@ await test('Keyboard dialog focus, Escape and visible focus outline',async()=>{
  for(let i=0;i<18;i++){await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>!!document.activeElement.closest('dialog')),true)}
  await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>document.activeElement.dataset.action),'review');assert.notEqual(await page.evaluate(()=>getComputedStyle(document.activeElement).outlineStyle),'none');
 });
+await test('Editing validates, persists, cancels and preserves related data',async()=>{
+ const id=(await state(page)).custom[0].id;
+ await action('shortlist',id).click();await saved(page);
+ await action('review',id).click();await page.locator('#reviewNotes').fill('Preserve my research notes');await page.locator('#saveReview').click();await saved(page);await close();
+ const before=await state(page);
+ await action('edit',id).click();await page.locator('#editTitle').fill('CodeProvenance: AST and Git Telemetry Engine');await page.getByRole('button',{name:'Update proposal',exact:true}).click();assert.match(await page.locator('#editError').textContent(),/already exists/);assert.deepEqual(await state(page),before);
+ await page.locator('#editTitle').fill('Revised <img src=x onerror=alert(1)>');await page.locator('#editContext').fill('Access permission required');await page.getByRole('button',{name:'Update proposal',exact:true}).click();await saved(page);
+ const updated=await state(page);assert.deepEqual(updated.shortlist,before.shortlist);assert.deepEqual(updated.reviews,before.reviews);assert.equal(updated.custom[0].title,'Revised <img src=x onerror=alert(1)>');
+ await page.reload();await saved(page);assert.equal(await page.locator('.proposal-card img,.proposal-card script').count(),0);
+ await action('edit',id).click();await page.locator('#editTitle').fill('Unsaved name');page.once('dialog',d=>d.dismiss());await page.locator('#cancelEdit').click();assert.equal(await page.locator('#dialog').evaluate(el=>el.open),true);assert.equal(await page.locator('#editTitle').inputValue(),'Unsaved name');
+ page.once('dialog',d=>d.accept());await page.keyboard.press('Escape');assert.deepEqual(await state(page),updated);
+});
+await test('Sorting, needs-scores filter, notes search and next-review progress',async()=>{
+ await page.locator('#sortInput').selectOption('title');assert.equal(await page.locator('.proposal-card h3').first().textContent(),'AlgoGuard');
+ await page.locator('#nextReviewButton').click();assert.equal(await page.locator('#dialogTitle').textContent(),'TricyRoute Lipa');
+ for(let i=0;i<4;i++)await page.locator(`#score-${i}`).selectOption('4');await page.locator('#saveReview').click();await saved(page);await close();
+ assert.equal(await page.locator('#progressSummary').textContent(),'1 of 5 ideas fully scored');assert.equal(await page.locator('#reviewProgress').getAttribute('value'),'1');
+ await page.locator('#sortInput').selectOption('score');assert.equal(await page.locator('.proposal-card h3').first().textContent(),'TricyRoute Lipa');
+ await page.locator('#filterInput').selectOption('unscored');assert.equal(await page.locator('.proposal-card').count(),4);
+ await page.locator('#searchInput').fill('Preserve my research notes');assert.equal(await page.locator('.proposal-card').count(),1);
+ await page.locator('#searchInput').fill('');await page.locator('#filterInput').selectOption('all');await page.locator('#sortInput').selectOption('original');
+ await page.locator('#nextReviewButton').click();assert.match(await page.locator('#dialogTitle').textContent(),/Revised/);await close();
+ if(await page.locator('#dismissNotice').isVisible()){await page.locator('#dismissNotice').click();assert.equal(await page.locator('#noticeRegion').isVisible(),false)}
+});
+await test('Video playback, pause, offscreen and dialog suspension',async()=>{
+ await page.locator('#ambientVideo').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('#ambientVideo').currentTime>0);
+ if(await page.locator('#ambientVideo').evaluate(v=>v.paused))await page.locator('#motionButton').click();
+ await page.waitForFunction(()=>!document.querySelector('#ambientVideo').paused);
+ await page.locator('#motionButton').click();assert.equal(await page.locator('#ambientVideo').evaluate(v=>v.paused),true);assert.equal(await page.locator('#motionButton').getAttribute('aria-pressed'),'false');
+ await page.locator('#motionButton').click();await page.waitForFunction(()=>!document.querySelector('#ambientVideo').paused);
+ await page.locator('#nextReviewButton').click();assert.equal(await page.locator('#ambientVideo').evaluate(v=>v.paused),true);await close();
+ await page.locator('#storage').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('#ambientVideo').paused);
+ await page.locator('#ambientVideo').scrollIntoViewIfNeeded();await page.waitForFunction(()=>!document.querySelector('#ambientVideo').paused);
+ await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>document.querySelector('#ambientVideo').paused);assert.equal(await page.locator('#motionButton').isDisabled(),true);
+ await page.emulateMedia({reducedMotion:'no-preference'});assert.equal(await page.locator('#ambientVideo').evaluate(v=>v.paused),true);
+});
+await test('Device preferences skip video; media failure preserves app',async()=>{
+ for(const mode of ['reduced','data','failed']){
+  const c=await browser.newContext({reducedMotion:mode==='reduced'?'reduce':'no-preference'});const p=await c.newPage();let videos=0;
+  p.on('request',r=>{if(r.url().endsWith('.mp4'))videos++});
+  if(mode==='data')await p.addInitScript(()=>Object.defineProperty(navigator,'connection',{value:{saveData:true,addEventListener(){}}}));
+  if(mode==='failed')await p.route('**/idea-orbit.mp4',r=>r.abort());
+  await open(p);await p.locator('#ambientVideo').scrollIntoViewIfNeeded();
+  if(mode==='failed'){await p.waitForFunction(()=>document.querySelector('#motionButton').textContent==='Motion unavailable');assert.ok(videos>0)}
+  else {await p.waitForTimeout(300);assert.equal(videos,0);assert.equal(await p.locator('#ambientVideo').getAttribute('src'),null)}
+  assert.equal(await p.locator('#motionButton').isDisabled(),true);assert.equal(await p.locator('.proposal-card').count(),4);
+  assert.equal((await p.request.get(base+'/static/idea-orbit.webp')).status(),200);await c.close();
+ }
+});
 await test('Light/dark axe checks and responsive no-overflow',async()=>{
  for(const theme of ['light','dark']){
   if(await page.locator('html').getAttribute('data-theme')!==theme){await page.locator('#themeButton').click();await saved(page)}
