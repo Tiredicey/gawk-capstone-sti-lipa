@@ -127,6 +127,24 @@ export function selectProposals(state, {search = '', filter = 'all', sort = 'ori
   if (sort === 'score') proposals.sort((a, b) => (overallScore(state.reviews[b.id]?.scores) ?? -1) - (overallScore(state.reviews[a.id]?.scores) ?? -1));
   return proposals;
 }
+export const DRAFT_BATCH = 50;
+export function validateDraftBatch(input) {
+  keys(input, ['drafts'], 'intake');
+  check(Array.isArray(input.drafts) && input.drafts.length <= DRAFT_BATCH, `Send at most ${DRAFT_BATCH} drafts per request.`);
+  const seen = new Set();
+  return input.drafts.map(d => {
+    check(d && typeof d === 'object' && !Array.isArray(d), 'Invalid draft.');
+    const allowed = ['title', 'domain', 'summary', 'author', 'source'];
+    check(Object.keys(d).every(k => allowed.includes(k)) && Object.hasOwn(d, 'title'), 'Invalid draft fields.');
+    const title = text(d.title, 240, 'Title', true).replace(/\s+/g, ' ');
+    check(title.length >= 3 && /\p{L}/u.test(title), 'Title needs at least three characters and a letter.');
+    const norm = normalizeTitle(title);
+    check(!seen.has(norm), 'Duplicate titles in one request.');
+    seen.add(norm);
+    return {title, norm, domain: text(d.domain ?? '', 100, 'Domain').trim() || 'General IT', summary: text(d.summary ?? '', 4000, 'Summary').trim(), author: text(d.author ?? '', 80, 'Author').trim(), source: ['heisenbot', 'messenger'].includes(d.source) ? d.source : 'heisenbot'};
+  });
+}
+export const referenceTitles = () => new Set(DEFAULT_PROPOSALS.map(p => normalizeTitle(p.title)));
 export function assessmentProgress(state) {
   const all = [...DEFAULT_PROPOSALS, ...state.custom];
   const complete = all.filter(p => overallScore(state.reviews[p.id]?.scores) !== null).length;

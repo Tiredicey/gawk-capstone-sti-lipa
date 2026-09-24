@@ -1,4 +1,4 @@
-import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, selectProposals, assessmentProgress} from './model.js';
+import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, selectProposals, assessmentProgress, normalizeTitle} from './model.js';
 
 const $ = id => document.getElementById(id);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -89,8 +89,43 @@ function render() {
     const c = concept(p), selected = state.shortlist.includes(p.id), custom = p.id.startsWith('custom-');
     return `<article class="proposal-card${selected ? ' is-shortlisted' : ''}" data-tone="${all.findIndex(item => item.id === p.id) % 4}" aria-labelledby="title-${p.id}"><div class="card-top"><span class="proposal-number">${String(all.findIndex(item => item.id === p.id) + 1).padStart(2, '0')}</span><span class="domain">${escape(p.domain)}</span><button class="shortlist-toggle" data-action="shortlist" data-id="${p.id}" aria-pressed="${selected}" aria-label="${selected ? 'Remove' : 'Add'} ${escape(c.name)} ${selected ? 'from' : 'to'} shortlist" ${!ready ? 'disabled' : ''}>${selected ? '✓' : '＋'}</button></div><h3 id="title-${p.id}">${escape(c.name)}</h3><p class="card-description">${escape(c.desc)}</p><p class="research-question"><span>${custom ? 'YOUR CONTEXT' : 'A QUESTION TO EXPLORE'}</span>${escape(c.question)}</p><div class="card-meta"><span>${custom ? 'Your proposal' : 'Reference concept'}</span><span>${scoreLabel(p.id)}</span></div><div class="card-actions"><button class="btn btn-secondary" data-action="review" data-id="${p.id}">Review idea <span aria-hidden="true">↗</span></button><button class="quiet" data-action="share" data-id="${p.id}">Prepare vote</button>${custom ? `<button class="quiet" data-action="edit" data-id="${p.id}" ${!ready ? 'disabled' : ''}>Edit</button><button class="quiet danger" data-action="remove" data-id="${p.id}" ${!ready ? 'disabled' : ''}>Remove</button>` : ''}</div></article>`;
   }).join('') : '<section class="empty-state"><h3>No matching ideas</h3><p>Try another keyword or view all ideas.</p><button class="btn btn-secondary" data-action="reset">Clear filters</button></section>';
+  if (typeof renderDrafts === 'function' && $('draftList')) renderDrafts();
   if (focusId && focusAction) [...document.querySelectorAll('[data-action]')].find(el => el.dataset.id === focusId && el.dataset.action === focusAction)?.focus({preventScroll: true});
 }
+let drafts = [], draftsLoaded = false;
+const onBoard = title => allProposals().some(p => normalizeTitle(p.title) === normalizeTitle(title));
+const draftProposal = d => ({id: `custom-${crypto.randomUUID()}`, title: d.title, domain: d.domain || 'General IT', desc: d.summary || `Capstone title sent${d.author ? ` by ${d.author}` : ''} in the group chat. Add the problem and approach.`, note: `From the group chat${d.author ? ` · ${d.author}` : ''} · ${new Date(d.created_at).toLocaleDateString('en-PH', {year: 'numeric', month: 'short', day: 'numeric'})}`});
+function renderDrafts() {
+  const fresh = drafts.filter(d => !onBoard(d.title));
+  $('draftCount').textContent = drafts.length;
+  $('addAllDrafts').disabled = !ready || !fresh.length;
+  $('addAllDrafts').textContent = fresh.length ? `Add all ${fresh.length} new to my board` : 'All drafts are on your board';
+  if (draftsLoaded) $('draftStatus').textContent = drafts.length ? `${drafts.length} title${drafts.length === 1 ? '' : 's'} · ${fresh.length} not on your board` : 'No titles posted yet';
+  $('draftList').innerHTML = drafts.length ? drafts.map(d => {
+    const added = onBoard(d.title);
+    return `<li class="draft-item${added ? ' is-added' : ''}"><div><h3>${escape(d.title)}</h3><p class="draft-meta"><span class="domain">${escape(d.domain)}</span>${d.author ? `<span>${escape(d.author)}</span>` : ''}<time datetime="${new Date(d.created_at).toISOString()}">${escape(new Date(d.created_at).toLocaleString('en-PH', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}))}</time></p>${d.summary ? `<p class="draft-summary">${escape(d.summary)}</p>` : ''}</div><button class="btn btn-secondary" data-draft="${escape(d.id)}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add to my board'}</button></li>`;
+  }).join('') : draftsLoaded ? '<li class="draft-empty">When a member sends a title such as <q>Title: Smart Attendance Tracker</q> in the group chat, Heisenbot posts it here.</li>' : '';
+}
+async function loadDrafts() {
+  try {
+    const data = await request('/api/drafts');
+    drafts = Array.isArray(data.drafts) ? data.drafts.filter(d => d && typeof d.title === 'string' && typeof d.id === 'string') : [];
+    draftsLoaded = true;
+  } catch (error) { $('draftStatus').textContent = `Drafts unavailable: ${error.message}`; }
+  renderDrafts();
+}
+function addDrafts(list) {
+  const room = 100 - state.custom.length, take = list.filter(d => !onBoard(d.title)).slice(0, Math.max(0, room));
+  if (!take.length) { notify(room <= 0 ? 'Your board already holds 100 custom proposals.' : 'Those titles are already on your board.'); return; }
+  if (mutate(next => { next.custom.push(...take.map(draftProposal)); })) notify(`${take.length} group chat title${take.length === 1 ? '' : 's'} added to your board${take.length < list.filter(d => !onBoard(d.title)).length ? '. The 100-proposal limit stopped the rest' : ''}. Check the save status for D1 confirmation.`);
+}
+$('draftList').addEventListener('click', event => {
+  const button = event.target.closest('button[data-draft]'); if (!button) return;
+  const d = drafts.find(item => item.id === button.dataset.draft); if (d) addDrafts([d]);
+});
+$('addAllDrafts').onclick = () => addDrafts(drafts);
+$('refreshDrafts').onclick = loadDrafts;
+document.addEventListener('visibilitychange', () => { if (!document.hidden && draftsLoaded) loadDrafts(); });
 function openDialog(title, body, className = '') {
   returnFocus = document.activeElement; editDirty = false;
   $('dialog').className = className;
@@ -289,4 +324,4 @@ window.addEventListener('pagehide', () => ambient.pause());
 window.addEventListener('pageshow', syncMotion);
 if ('IntersectionObserver' in window) new IntersectionObserver(entries => { mediaVisible = entries[0].isIntersecting; syncMotion(); }, {threshold: 0}).observe(ambient);
 else { mediaVisible = true; syncMotion(); }
-updateMotionControl(); render(); load();
+updateMotionControl(); render(); load(); loadDrafts();

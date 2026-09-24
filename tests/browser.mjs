@@ -145,6 +145,18 @@ await test('Device preferences skip video; media failure preserves app',async()=
   assert.equal((await p.request.get(base+'/static/idea-orbit.webp')).status(),200);await c.close();
  }
 });
+await test('Group chat drafts render escaped and copy into the board once',async()=>{
+ const token=process.env.INTAKE_TOKEN||(await readFile('.dev.vars','utf8')).match(/^INTAKE_TOKEN=(.+)$/m)[1].trim();
+ const title=`Chat Draft <img src=x onerror=alert(1)> ${Date.now()}`;
+ const r=await fetch(base+'/api/intake',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({drafts:[{title,author:'Kurt Atienza',summary:'Posted by Heisenbot'}]})});assert.equal(r.status,201);
+ await page.locator('#refreshDrafts').click();const item=page.locator('.draft-item',{hasText:'Chat Draft'}).first();await item.waitFor();
+ assert.equal(await page.locator('.draft-item img').count(),0);const before=(await state(page)).custom.length;
+ await item.getByRole('button',{name:'Add to my board'}).click();await saved(page);
+ const s=await state(page);assert.equal(s.custom.length,before+1);assert.equal(s.custom.at(-1).title,title);assert.match(s.custom.at(-1).note,/Kurt Atienza/);
+ assert.equal(await item.getByRole('button').isDisabled(),true);
+ const id=s.custom.at(-1).id;await action('remove',id).click();await page.locator('#confirmAction').click();await saved(page);
+ const list=(await(await fetch(base+'/api/drafts')).json()).drafts;for(const d of list.filter(d=>d.title.startsWith('Chat Draft')))await fetch(base+'/api/intake/'+d.id,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});
+});
 await test('Light/dark axe checks and responsive no-overflow',async()=>{
  for(const theme of ['light','dark']){
   if(await page.locator('html').getAttribute('data-theme')!==theme){await page.locator('#themeButton').click();await saved(page)}

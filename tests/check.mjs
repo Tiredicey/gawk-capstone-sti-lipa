@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
-import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE, selectProposals, assessmentProgress} from '../public/static/model.js';
+import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE, selectProposals, assessmentProgress, validateDraftBatch} from '../public/static/model.js';
 const base = 'http://localhost:3000';
 let count = 0;
 async function test(name, fn) { await fn(); console.log(`PASS ${++count}: ${name}`); }
@@ -96,6 +96,27 @@ await test('D1 persistence, stale revision rejection and cookie isolation', asyn
   assert.equal((await put({state:emptyState(),revision:initial.revision})).status,409);
   assert.deepEqual((await get()).state,state);
   assert.deepEqual((await (await fetch(base+'/api/workspace')).json()).state,emptyState());
+});
+await test('Draft batch validation trims, dedupes and rejects bad input', () => {
+  assert.deepEqual(validateDraftBatch({drafts:[{title:'  Smart   Clinic Queue ',author:'Kurt'}]}),[{title:'Smart Clinic Queue',norm:'smart clinic queue',domain:'General IT',summary:'',author:'Kurt',source:'heisenbot'}]);
+  for (const bad of [{}, {drafts:'x'}, {drafts:[{title:'ab'}]}, {drafts:[{title:'123'}]}, {drafts:[{title:'Same'},{title:' SAME '}]}, {drafts:[{title:'Ok title',extra:1}]}, {drafts:Array.from({length:51},(_,i)=>({title:`Title ${i}`}))}]) assert.throws(()=>validateDraftBatch(bad));
+});
+const token = process.env.INTAKE_TOKEN || (readFileSync('.dev.vars','utf8').match(/^INTAKE_TOKEN=(.+)$/m) || [])[1]?.trim();
+const intake = (body, auth = token) => fetch(base+'/api/intake',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${auth}`},body:JSON.stringify(body)});
+await test('Heisenbot intake requires token, dedupes, skips reference titles and publishes drafts', async () => {
+  const title = `Group Chat Draft ${Date.now()}`;
+  assert.equal((await intake({drafts:[{title}]}, 'wrong-token-wrong-token-wrong')).status,401);
+  assert.equal((await fetch(base+'/api/intake',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"drafts":[]}'})).status,401);
+  const first = await intake({drafts:[{title,author:'Kurt Atienza <b>',domain:'Education'},{title:DEFAULT_PROPOSALS[1].title}]});
+  assert.equal(first.status,201); const body = await first.json();
+  assert.deepEqual(body.added,[title]); assert.equal(body.skipped[0].reason,'reference proposal');
+  assert.equal((await (await intake({drafts:[{title:title.toUpperCase()}]})).json()).skipped[0].reason,'already posted');
+  assert.equal((await intake({drafts:[{title:'x'}]})).status,400);
+  const list = (await (await fetch(base+'/api/drafts')).json()).drafts; const row = list.find(d=>d.title===title);
+  assert.equal(row.author,'Kurt Atienza <b>'); assert.equal(row.domain,'Education');
+  assert.equal((await fetch(base+'/api/intake/'+row.id,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}})).status,200);
+  assert.ok(!(await (await fetch(base+'/api/drafts')).json()).drafts.some(d=>d.id===row.id));
+  assert.equal((await (await fetch(base+'/api/intake',{headers:{Authorization:`Bearer ${token}`}})).json()).ok,true);
 });
 console.log(`${count} model/API groups passed.`);
 await import('./browser.mjs');
