@@ -14,12 +14,13 @@ const open=async p=>{await p.goto(base);await saved(p)};
 const state=p=>p.evaluate(async()=>(await(await fetch('/api/workspace')).json()).state);
 const action=(kind,id='default-1')=>page.locator(`[data-action="${kind}"][data-id="${id}"]`);
 const close=()=>page.locator('#closeDialog').click();
+async function shot(p,path){const {width,height}=await p.evaluate(()=>({width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight}));await p.screenshot({path,fullPage:true,clip:{x:0,y:0,width,height:Math.min(height,6000)}})}
 async function test(name,fn){try{await fn();results.push({name,status:'PASS'});console.log('PASS browser: '+name)}catch(e){results.push({name,status:'FAIL',error:e.message});throw e}}
 async function download(button,path){const pending=page.waitForEvent('download');await page.locator(button).click();await(await pending).saveAs(path);return parseBackup(JSON.parse(await readFile(path,'utf8')))}
 try{
 await test('Load, search and filters',async()=>{
  await open(page);assert.equal(await page.locator('.proposal-card').count(),4);
- await page.screenshot({path:'test-results/desktop-light.png',fullPage:true});
+ await shot(page,'test-results/desktop-light.png');
  await page.locator('#searchInput').fill('bytecode');assert.equal(await page.locator('.proposal-card').count(),1);
  await page.locator('#searchInput').fill('nothing here');assert.equal(await page.locator('.proposal-card').count(),0);
  await page.getByRole('button',{name:'Clear filters'}).click();assert.equal(await page.locator('.proposal-card').count(),4);
@@ -176,7 +177,10 @@ await test('SDG 17 title review filters, links drafts and adds revised titles on
  await page.locator('#addRecommended').click();await saved(page);
  assert.equal((await state(page)).custom.length,before.length+1+pending);assert.equal(await page.locator('#addRecommended').isDisabled(),true);
  await page.locator('#printTitles').click();assert.ok(await page.locator('.comparison tbody tr').count()>30);await close();
- assert.equal(await page.locator('#titleSources li').count(),21);
+ assert.equal(await page.locator('#titleSources li').count(),35);
+ assert.equal(await page.locator('#counselList .counsel-item').count(),11);assert.equal(await page.locator('#counselList [data-verdict="corrected"]').count(),1);
+ assert.ok(await page.locator('#title-r1 .legal-basis li').count()>=3);assert.match(await page.locator('#title-r1 .verify-action').first().textContent(),/Sangguniang Panlungsod/);
+ assert.equal(await page.locator('#title-review .thesis-tag').count(),9);
  await page.evaluate(async keep=>{const r=await(await fetch('/api/workspace')).json();r.state.custom=keep;r.state.shortlist=r.state.shortlist.filter(id=>id.startsWith('default-')||keep.some(p=>p.id===id));r.state.reviews=Object.fromEntries(Object.entries(r.state.reviews).filter(([id])=>id.startsWith('default-')||keep.some(p=>p.id===id)));await fetch('/api/workspace',{method:'PUT',headers:{'Content-Type':'application/json','X-Workspace-Request':'1'},body:JSON.stringify(r)})},before);
  await open(page);await page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished)));
 });
@@ -184,10 +188,10 @@ await test('Light/dark axe checks and responsive no-overflow',async()=>{
  for(const theme of ['light','dark']){
   if(await page.locator('html').getAttribute('data-theme')!==theme){await page.locator('#themeButton').click();await saved(page)}
   const a=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();assert.deepEqual(a.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[]);
-  await page.screenshot({path:`test-results/desktop-${theme}.png`,fullPage:true});
+  await shot(page,`test-results/desktop-${theme}.png`);
  }
  for(const width of [320,375,768,1024,1440]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow at ${width}`);assert.equal(await page.locator('#themeButton').isVisible(),true)}
- await page.setViewportSize({width:375,height:812});await page.screenshot({path:'test-results/mobile-dark.png',fullPage:true});
+ await page.setViewportSize({width:375,height:812});await shot(page,'test-results/mobile-dark.png');
  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('#themeButton').evaluate(el=>getComputedStyle(el).transitionDuration),'0s');
  assert.deepEqual(errors,[]);
 });

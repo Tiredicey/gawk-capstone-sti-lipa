@@ -37,6 +37,18 @@ What the review relies on, and its limits:
 - Not confirmed: the Lipa tricycle fare ordinance, license-exempt LoRa bands (the FOI page was under maintenance), a reference air monitor near Lipa, the LMS STI Lipa uses, 2025 to 2026 Lipa coffee volumes, and OpenAlex 2026 pricing.
 - Data lives in `public/static/titles.js`. `tests/fixtures/drafts-2026-10-01.json` snapshots the drafts, and the model tests fail when a draft has no review.
 
+## Legal check of counsel's notes
+Counsel's notes were checked against primary text on October 1, 2026. Data lives in `public/static/legal.js`. Each title card now shows a **Legal basis** list with pinpoint citations and a **Verify against** action naming who to ask. Nine research-heavy titles carry a **Thesis track** tag. That tag is our judgement, not a degree certification. The **Legal check of counsel's notes** panel records every point.
+
+- **Supported:** R.A. 7160 Sec. 458(a)(3)(vi) gives cities the power to regulate tricycles and grant franchises, subject to DOTC guidelines. The 1994 DOTC guidelines let the council fix fares by zone after public hearing; LTFRB powers over tricycles-for-hire ended 30 June 1992. LTO v. City of Butuan (G.R. 131512) keeps registration and licensing with the LTO. R.A. 10121 Sec. 12(a) establishes an LDRRMO in every city, and Sec. 12(c)(5) assigns early warning to it. R.A. 8792 Secs. 7, 11 and 12 and Rules on Electronic Evidence Rules 5 and 7 govern the timestamping title.
+- **Corrected:** R.A. 10173 Sec. 20 covers security, with breach notification in Sec. 20(f). Sec. 21(b) covers the accountable individual. The Act does not use the word "biometric". NPC Advisory Opinion 2017-63 treated signatures as personal, not sensitive, information, so keystroke data stays an open question.
+- **Partly supported:** a city cooperatives office comes from R.A. 7160 Secs. 454(b) and 487, where the officer is optional. R.A. 9520 Art. 5(8) covers the CDA only.
+- **LoRa:** the NTC short range device circulars we read require type approval and one-time registration. Their sub-1 GHz bands are 433 MHz and 868 to 870 MHz. 918 to 920 MHz is open to RFID only. No 920 to 925 MHz SRD entry turned up, and three 2015 amendments were unreadable scans. Write to NTC before choosing radios.
+- **EMB:** no listed EMB CALABARZON station is in Lipa. San Nicolas, Batangas uses an indicative method.
+- **PNS/BAFS 01:2025:** confirmed on the DA-BAFS list. The standard's clauses were not read.
+
+This is research support, not legal advice.
+
 ## Group chat drafts from Heisenbot
 [Heisenbot](https://github.com/Tiredicey/Heisenbot) watches the Messenger group chat. When a member sends a capstone title, it posts the title here. The **Group chat drafts** section lists every posted title with its sender and time. Anyone who opens the site sees the same list. **Add to my board** or **Add all new to my board** copies titles into your own workspace, where you can edit, shortlist and score them.
 

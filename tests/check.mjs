@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE, selectProposals, assessmentProgress, validateDraftBatch} from '../public/static/model.js';
 import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, BUILD_WEEKS, hardwareShare, ratioLabel, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from '../public/static/titles.js';
+import {LEGAL_SOURCES, LEGAL_BASIS, VERIFY, THESIS_TRACK, COUNSEL_REVIEW, COUNSEL_VERDICTS} from '../public/static/legal.js';
 const base = 'http://localhost:3000';
 let count = 0;
 async function test(name, fn) { await fn(); console.log(`PASS ${++count}: ${name}`); }
@@ -93,6 +94,20 @@ await test('Title reviews cover every reference and group chat title with valid 
   assert.deepEqual(validateWorkspace({...emptyState(), custom: [proposal]}).custom[0], proposal);
   const all = [...TITLE_REVIEWS, ...SUGGESTED_TITLES].filter(r => ['recommended', 'revise'].includes(r.verdict)).map((r, i) => titleToProposal(r, `custom-t${i}`));
   assert.equal(validateWorkspace({...emptyState(), custom: all}).custom.length, all.length);
+});
+await test('Legal basis, verify actions and counsel review reference real titles and sources', () => {
+  const keys = new Set([...TITLE_REVIEWS, ...SUGGESTED_TITLES].map(r => r.key));
+  const src = k => LEGAL_SOURCES[k] || SOURCES[k];
+  for (const [key, rows] of Object.entries(LEGAL_BASIS)) { assert.ok(keys.has(key), key); for (const [cite, why, k] of rows) { assert.ok(cite && why); assert.ok(src(k), `${key} ${k}`); } }
+  for (const [key, [text, k]] of Object.entries(VERIFY)) { assert.ok(keys.has(key), key); assert.ok(text.length > 20); if (k) assert.ok(src(k), `${key} ${k}`); }
+  for (const key of THESIS_TRACK) assert.ok(keys.has(key), key);
+  for (const c of COUNSEL_REVIEW) { assert.ok(COUNSEL_VERDICTS[c.verdict]); assert.ok(c.finding && c.action); for (const k of c.sources) assert.ok(src(k), k); }
+  for (const x of Object.values(LEGAL_SOURCES)) assert.match(x.url, /^https:\/\//);
+  const all = JSON.stringify({LEGAL_SOURCES, LEGAL_BASIS, VERIFY, COUNSEL_REVIEW});
+  assert.ok(!/\u2014/.test(all));
+  assert.match(LEGAL_SOURCES.lgc.supports, /458\(a\)\(3\)\(vi\)/);
+  assert.ok(COUNSEL_REVIEW.some(c => c.verdict === 'corrected' && /Sec\. 21\(b\)/.test(c.finding)));
+  for (const r of [...TITLE_REVIEWS, ...SUGGESTED_TITLES].filter(r => r.verdict === 'recommended')) assert.ok(LEGAL_BASIS[r.key], `recommended ${r.key} lacks legal basis`);
 });
 let cookie, initial;
 const get = async () => (await fetch(base+'/api/workspace',{headers:cookie?{Cookie:cookie}:{}})).json();
