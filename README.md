@@ -19,6 +19,24 @@ This update targets the Hono application, not the unchanged root GitHub Pages ar
 
 The original proposals, team roles and January 31, 2027 Philippine-time target remain. Preserving reference wording does not endorse its claims. This workspace does not implement the proposed transport or similarity-detection research systems; current regulatory applicability and research outcomes need separate verification.
 
+## SDG 17 title review
+The **Title review · SDG 17** section reviews all 43 titles on record as of October 1, 2026: the four reference proposals and the 39 group chat drafts from `/api/drafts`. For each title it shows:
+
+- a revised capstone title, a verdict (Recommended, Revise before proposing, Merge into another title, Park for now) and an SDG 17 fit rating;
+- the SDG 17 targets it serves, worded as on the UN DESA target list;
+- an estimated hardware : software split across 16 build weeks, with a bar and a project type;
+- scope, risks, sources and anything not confirmed.
+
+Six new titles follow the reviewed ones. Filters cover verdict, fit, hardware or software, and free text. **Add revised title to my board** and **Add all recommended** copy titles into your workspace once each. **Print title review** opens a printable table. Group chat drafts link to their review.
+
+Result: 8 recommended, 8 revise, 10 merge, 17 park. 8 of the 33 non-merged titles include hardware. Hardware is 11% of total effort, because most drafts are code-similarity or AI-detection tools.
+
+What the review relies on, and its limits:
+- The ratio is an effort estimate. No STI or CHED rule setting a hardware percentage turned up. The STI guideline copy we read (Studocu, undated) says BSIT uses hardware and software and asks for separate resource lists. Confirm the current edition with your coordinator.
+- City offices named as partners come from lipa.gov.ph. None has agreed to anything.
+- Not confirmed: the Lipa tricycle fare ordinance, license-exempt LoRa bands (the FOI page was under maintenance), a reference air monitor near Lipa, the LMS STI Lipa uses, 2025 to 2026 Lipa coffee volumes, and OpenAlex 2026 pricing.
+- Data lives in `public/static/titles.js`. `tests/fixtures/drafts-2026-10-01.json` snapshots the drafts, and the model tests fail when a draft has no review.
+
 ## Group chat drafts from Heisenbot
 [Heisenbot](https://github.com/Tiredicey/Heisenbot) watches the Messenger group chat. When a member sends a capstone title, it posts the title here. The **Group chat drafts** section lists every posted title with its sender and time. Anyone who opens the site sees the same list. **Add to my board** or **Add all new to my board** copies titles into your own workspace, where you can edit, shortlist and score them.
 
@@ -35,7 +53,7 @@ The original proposals, team roles and January 31, 2027 Philippine-time target r
 If the token is not set, `/api/intake` answers 503 and nothing can be posted.
 
 ## Routes and storage
-`GET /`, `GET /api/workspace`, `PUT /api/workspace`, `GET /api/drafts`, `GET|POST /api/intake`, `DELETE /api/intake/:id`, `GET /api/health`, `/static/*`.
+`GET /` (includes `#title-review`), `GET /api/workspace`, `PUT /api/workspace`, `GET /api/drafts`, `GET|POST /api/intake`, `DELETE /api/intake/:id`, `GET /api/health`, `/static/*`.
 
 `POST /api/intake` takes `{"drafts":[{"title","domain?","summary?","author?","source?"}]}` with up to 50 drafts and `Authorization: Bearer <INTAKE_TOKEN>`. It answers `{added:[titles], skipped:[{title, reason}]}`. D1 table `drafts` stores the title, a normalized unique key, domain, summary, author, source, time and a hidden flag.
 

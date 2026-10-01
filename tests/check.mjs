@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE, selectProposals, assessmentProgress, validateDraftBatch} from '../public/static/model.js';
+import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, BUILD_WEEKS, hardwareShare, ratioLabel, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from '../public/static/titles.js';
 const base = 'http://localhost:3000';
 let count = 0;
 async function test(name, fn) { await fn(); console.log(`PASS ${++count}: ${name}`); }
@@ -69,6 +70,29 @@ await test('Progress counts complete assessments and prioritizes shortlist', () 
   assert.deepEqual(assessmentProgress(s), {complete:4,total:4,next:null});
   s.custom.push(proposal());
   assert.deepEqual(assessmentProgress(s), {complete:4,total:5,next:'custom-test'});
+});
+await test('Title reviews cover every reference and group chat title with valid sources, targets and ratios', () => {
+  const chat = JSON.parse(readFileSync('tests/fixtures/drafts-2026-10-01.json','utf8')).drafts.map(d => d.title);
+  for (const title of [...DEFAULT_PROPOSALS.map(p => p.title), ...chat]) assert.ok(reviewForTitle(title), `missing review: ${title}`);
+  const keys = new Set();
+  for (const r of [...TITLE_REVIEWS, ...SUGGESTED_TITLES]) {
+    assert.ok(!keys.has(r.key)); keys.add(r.key);
+    assert.equal(r.effort[0] + r.effort[1], BUILD_WEEKS);
+    assert.ok(r.targets.length && r.targets.every(x => SDG17_TARGETS[x]));
+    assert.ok(r.sources.length && r.sources.every(k => /^https:\/\//.test(SOURCES[k]?.url)));
+    assert.ok(!/\u2014/.test([r.revised, r.why, r.scope, r.risks, r.unverified].join(' ')));
+    if (r.verdict === 'merge') assert.ok(TITLE_REVIEWS.some(x => x.key === r.mergeInto && x.key !== r.key));
+    if (['recommended', 'revise'].includes(r.verdict)) assert.ok(r.revised.length > 10);
+  }
+  assert.equal(hardwareShare([8, 8]), 50); assert.equal(hardwareShare([0, 16]), 0); assert.equal(ratioLabel([7, 9]), '44 : 56');
+  const sum = portfolioSummary(TITLE_REVIEWS);
+  assert.equal(sum.total, 43); assert.equal(sum.recommended + sum.revise + sum.merge + sum.park, 43);
+  assert.ok(filterTitles(TITLE_REVIEWS, {kind: 'hardware'}).every(r => r.effort[0] > 0));
+  assert.ok(filterTitles(TITLE_REVIEWS, {search: 'POULTRY'}).some(r => r.key === 'd09'));
+  const proposal = titleToProposal(TITLE_REVIEWS.find(r => r.key === 'd07'), 'custom-title-test');
+  assert.deepEqual(validateWorkspace({...emptyState(), custom: [proposal]}).custom[0], proposal);
+  const all = [...TITLE_REVIEWS, ...SUGGESTED_TITLES].filter(r => ['recommended', 'revise'].includes(r.verdict)).map((r, i) => titleToProposal(r, `custom-t${i}`));
+  assert.equal(validateWorkspace({...emptyState(), custom: all}).custom.length, all.length);
 });
 let cookie, initial;
 const get = async () => (await fetch(base+'/api/workspace',{headers:cookie?{Cookie:cookie}:{}})).json();

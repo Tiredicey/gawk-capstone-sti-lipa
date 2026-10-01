@@ -157,6 +157,29 @@ await test('Group chat drafts render escaped and copy into the board once',async
  const id=s.custom.at(-1).id;await action('remove',id).click();await page.locator('#confirmAction').click();await saved(page);
  const list=(await(await fetch(base+'/api/drafts')).json()).drafts;for(const d of list.filter(d=>d.title.startsWith('Chat Draft')))await fetch(base+'/api/intake/'+d.id,{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});
 });
+await test('SDG 17 title review filters, links drafts and adds revised titles once',async()=>{
+ const t=page.locator('#title-review');
+ assert.equal(await page.locator('#titleReviewCount').textContent(),'43');
+ assert.equal(await page.locator('#titleList .title-item').count()+await page.locator('#parkedList .title-item').count(),43);
+ assert.equal(await page.locator('#suggestList .title-item').count(),6);assert.equal(await page.locator('#parkedGroup').getAttribute('open'),null);
+ assert.equal(await page.locator('#titleList .title-item').first().getAttribute('data-verdict'),'recommended');
+ assert.equal(await page.evaluate(()=>document.querySelector('#title-d07 .ratio-hw').style.width),'50%');
+ await page.locator('#titleKind').selectOption('software');assert.equal(await t.locator('.ratio-hw:not([data-hw="0"])').count(),0);await page.locator('#titleKind').selectOption('all');
+ await page.locator('#titleSearch').fill('poultry');assert.ok(await page.locator('#title-d09').isVisible());await page.locator('#titleSearch').fill('');
+ await page.locator('#titleVerdict').selectOption('park');assert.equal(await page.locator('#parkedGroup').getAttribute('open'),'');assert.ok(await page.locator('#title-d25').isVisible());await page.locator('#titleVerdict').selectOption('all');
+ await page.locator('#parkedGroup').evaluate(el=>el.open=false);await page.locator('#title-d37 .compact-link').evaluate(el=>el.click());assert.equal(await page.locator('#parkedGroup').getAttribute('open'),'');await page.locator('#parkedGroup').evaluate(el=>el.open=false);
+ const before=(await state(page)).custom;
+ await page.locator('[data-title-add="d07"]').click();await saved(page);
+ const after=(await state(page)).custom;assert.equal(after.length,before.length+1);assert.match(after.at(-1).title,/Water-Level Monitoring/);assert.match(after.at(-1).domain,/^SDG 17/);
+ assert.equal(await page.locator('[data-title-add="d07"]').isDisabled(),true);
+ const pending=Number((await page.locator('#addRecommended').textContent()).match(/\d+/)[0]);
+ await page.locator('#addRecommended').click();await saved(page);
+ assert.equal((await state(page)).custom.length,before.length+1+pending);assert.equal(await page.locator('#addRecommended').isDisabled(),true);
+ await page.locator('#printTitles').click();assert.ok(await page.locator('.comparison tbody tr').count()>30);await close();
+ assert.equal(await page.locator('#titleSources li').count(),21);
+ await page.evaluate(async keep=>{const r=await(await fetch('/api/workspace')).json();r.state.custom=keep;r.state.shortlist=r.state.shortlist.filter(id=>id.startsWith('default-')||keep.some(p=>p.id===id));r.state.reviews=Object.fromEntries(Object.entries(r.state.reviews).filter(([id])=>id.startsWith('default-')||keep.some(p=>p.id===id)));await fetch('/api/workspace',{method:'PUT',headers:{'Content-Type':'application/json','X-Workspace-Request':'1'},body:JSON.stringify(r)})},before);
+ await open(page);await page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished)));
+});
 await test('Light/dark axe checks and responsive no-overflow',async()=>{
  for(const theme of ['light','dark']){
   if(await page.locator('html').getAttribute('data-theme')!==theme){await page.locator('#themeButton').click();await saved(page)}

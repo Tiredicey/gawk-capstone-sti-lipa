@@ -1,3 +1,4 @@
+import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, VERDICTS, FITS, REVIEWED_ON, ratioLabel, hardwareShare, projectType, displayTitle, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from './titles.js';
 import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, selectProposals, assessmentProgress, normalizeTitle} from './model.js';
 
 const $ = id => document.getElementById(id);
@@ -90,6 +91,7 @@ function render() {
     return `<article class="proposal-card${selected ? ' is-shortlisted' : ''}" data-tone="${all.findIndex(item => item.id === p.id) % 4}" aria-labelledby="title-${p.id}"><div class="card-top"><span class="proposal-number">${String(all.findIndex(item => item.id === p.id) + 1).padStart(2, '0')}</span><span class="domain">${escape(p.domain)}</span><button class="shortlist-toggle" data-action="shortlist" data-id="${p.id}" aria-pressed="${selected}" aria-label="${selected ? 'Remove' : 'Add'} ${escape(c.name)} ${selected ? 'from' : 'to'} shortlist" ${!ready ? 'disabled' : ''}>${selected ? '✓' : '＋'}</button></div><h3 id="title-${p.id}">${escape(c.name)}</h3><p class="card-description">${escape(c.desc)}</p><p class="research-question"><span>${custom ? 'YOUR CONTEXT' : 'A QUESTION TO EXPLORE'}</span>${escape(c.question)}</p><div class="card-meta"><span>${custom ? 'Your proposal' : 'Reference concept'}</span><span>${scoreLabel(p.id)}</span></div><div class="card-actions"><button class="btn btn-secondary" data-action="review" data-id="${p.id}">Review idea <span aria-hidden="true">↗</span></button><button class="quiet" data-action="share" data-id="${p.id}">Prepare vote</button>${custom ? `<button class="quiet" data-action="edit" data-id="${p.id}" ${!ready ? 'disabled' : ''}>Edit</button><button class="quiet danger" data-action="remove" data-id="${p.id}" ${!ready ? 'disabled' : ''}>Remove</button>` : ''}</div></article>`;
   }).join('') : '<section class="empty-state"><h3>No matching ideas</h3><p>Try another keyword or view all ideas.</p><button class="btn btn-secondary" data-action="reset">Clear filters</button></section>';
   if (typeof renderDrafts === 'function' && $('draftList')) renderDrafts();
+  if (typeof renderTitles === 'function') renderTitles();
   if (focusId && focusAction) [...document.querySelectorAll('[data-action]')].find(el => el.dataset.id === focusId && el.dataset.action === focusAction)?.focus({preventScroll: true});
 }
 let drafts = [], draftsLoaded = false;
@@ -103,7 +105,8 @@ function renderDrafts() {
   if (draftsLoaded) $('draftStatus').textContent = drafts.length ? `${drafts.length} title${drafts.length === 1 ? '' : 's'} · ${fresh.length} not on your board` : 'No titles posted yet';
   $('draftList').innerHTML = drafts.length ? drafts.map(d => {
     const added = onBoard(d.title);
-    return `<li class="draft-item${added ? ' is-added' : ''}"><div><h3>${escape(d.title)}</h3><p class="draft-meta"><span class="domain">${escape(d.domain)}</span>${d.author ? `<span>${escape(d.author)}</span>` : ''}<time datetime="${new Date(d.created_at).toISOString()}">${escape(new Date(d.created_at).toLocaleString('en-PH', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}))}</time></p>${d.summary ? `<p class="draft-summary">${escape(d.summary)}</p>` : ''}</div><button class="btn btn-secondary" data-draft="${escape(d.id)}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add to my board'}</button></li>`;
+    const reviewed = reviewForTitle(d.title);
+    return `<li class="draft-item${added ? ' is-added' : ''}"><div><h3>${escape(d.title)}</h3>${reviewed ? `<p class="draft-review"><a href="#title-${reviewed.key}">${escape(VERDICTS[reviewed.verdict])} · ${escape(FITS[reviewed.fit])} · see the review</a></p>` : ''}<p class="draft-meta"><span class="domain">${escape(d.domain)}</span>${d.author ? `<span>${escape(d.author)}</span>` : ''}<time datetime="${new Date(d.created_at).toISOString()}">${escape(new Date(d.created_at).toLocaleString('en-PH', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}))}</time></p>${d.summary ? `<p class="draft-summary">${escape(d.summary)}</p>` : ''}</div><button class="btn btn-secondary" data-draft="${escape(d.id)}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add to my board'}</button></li>`;
   }).join('') : draftsLoaded ? '<li class="draft-empty">When a member sends a title such as <q>Title: Smart Attendance Tracker</q> in the group chat, Heisenbot posts it here.</li>' : '';
 }
 async function loadDrafts() {
@@ -126,6 +129,65 @@ $('draftList').addEventListener('click', event => {
 $('addAllDrafts').onclick = () => addDrafts(drafts);
 $('refreshDrafts').onclick = loadDrafts;
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draftsLoaded) loadDrafts(); });
+const allTitles = () => [...TITLE_REVIEWS, ...SUGGESTED_TITLES];
+const isSettled = r => r.verdict === 'merge' || r.verdict === 'park';
+const titleOnBoard = r => allProposals().some(p => normalizeTitle(p.title) === normalizeTitle(r.revised));
+const titleById = key => allTitles().find(r => r.key === key);
+const verdictOrder = {recommended: 0, revise: 1, merge: 2, park: 3};
+const byVerdict = list => list.map((r, i) => [r, i]).sort((a, b) => verdictOrder[a[0].verdict] - verdictOrder[b[0].verdict] || a[1] - b[1]).map(([r]) => r);
+const titleBadges = r => `<div class="title-head"><span class="verdict verdict-${r.verdict}">${escape(VERDICTS[r.verdict])}</span><span class="fit fit-${r.fit}">${escape(FITS[r.fit])}</span><span class="targets">${r.targets.map(x => `<abbr title="${escape(SDG17_TARGETS[x])}">${x}</abbr>`).join('')}</span></div>`;
+function compactTitleCard(r) {
+  const target = r.mergeInto && titleById(r.mergeInto);
+  const next = target ? `<a class="compact-link" href="#title-${target.key}">Merges into: ${escape(displayTitle(target))} ↓</a>` : r.revised ? `<p class="compact-why">If revived: ${escape(r.revised)}</p>` : '';
+  return `<li id="title-${r.key}" class="title-item is-compact" data-verdict="${r.verdict}" tabindex="-1">${titleBadges(r)}<h3 class="title-original-compact">${escape(r.original)}</h3><p class="compact-why">${escape(target ? r.why : `${r.why} ${r.scope} ${r.risks}`)}${r.unverified ? ` <span class="unverified">Not confirmed: ${escape(r.unverified)}</span>` : ''}</p>${next}<p class="ratio-chip">Hardware : software ${ratioLabel(r.effort)}</p></li>`;
+}
+function titleCard(r) {
+  if (isSettled(r)) return compactTitleCard(r);
+  const added = titleOnBoard(r), hw = hardwareShare(r.effort);
+  return `<li id="title-${r.key}" class="title-item" data-verdict="${r.verdict}" tabindex="-1">${titleBadges(r)}${r.original ? `<p class="title-original"><span>Original</span>${escape(r.original)}</p>` : ''}<h3 class="title-revised">${escape(r.revised)}</h3><div class="ratio" role="img" aria-label="Estimated hardware ${hw} percent, software ${100 - hw} percent"><span class="ratio-hw" data-hw="${hw}"></span></div><p class="ratio-label"><strong>Hardware : software ${ratioLabel(r.effort)}</strong> · ${projectType(r.effort)} · estimate</p>${r.unverified ? '<p class="unverified-flag">Has unconfirmed points</p>' : ''}<details class="title-details"><summary>SDG 17 link, scope, risks and sources</summary><dl class="title-facts"><dt>SDG 17 link</dt><dd>${escape(r.why)}</dd><dt>Scope</dt><dd>${escape(r.scope)}</dd><dt>Risks</dt><dd>${escape(r.risks)}</dd>${r.unverified ? `<dt>Not confirmed</dt><dd class="unverified">${escape(r.unverified)}</dd>` : ''}<dt>Sources</dt><dd class="title-cites">${r.sources.map(k => `<a href="${SOURCES[k].url}" target="_blank" rel="noopener noreferrer">${escape(SOURCES[k].label)} ↗</a>`).join('')}</dd></dl></details><div class="title-item-actions"><button class="btn btn-secondary" data-title-add="${r.key}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add revised title to my board'}</button></div></li>`;
+}
+let sourcesRendered = false;
+function renderTitles() {
+  const filters = {search: $('titleSearch').value, verdict: $('titleVerdict').value, fit: $('titleFit').value, kind: $('titleKind').value};
+  const shown = byVerdict(filterTitles(TITLE_REVIEWS, filters)), suggested = filterTitles(SUGGESTED_TITLES, filters), sum = portfolioSummary(TITLE_REVIEWS);
+  const main = shown.filter(r => !isSettled(r)), settled = shown.filter(isSettled);
+  const pending = allTitles().filter(r => r.verdict === 'recommended' && !titleOnBoard(r));
+  $('titleReviewCount').textContent = TITLE_REVIEWS.length;
+  $('titleReviewStatus').textContent = `${shown.length + suggested.length} of ${TITLE_REVIEWS.length + SUGGESTED_TITLES.length} shown`;
+  $('titlePortfolio').innerHTML = [['Titles reviewed', sum.total], ['Recommended', sum.recommended], ['Revise first', sum.revise], ['Merge', sum.merge], ['Park', sum.park], ['With hardware', `${sum.hardwareTitles} of ${sum.active}`], ['Average hardware effort', `${sum.hardwareShare}%`]].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('titleList').innerHTML = main.length ? main.map(titleCard).join('') : `<li class="draft-empty">${settled.length ? 'Only merged or parked titles match. They are listed in the group below.' : 'No reviewed titles match these filters.'}</li>`;
+  $('parkedList').innerHTML = settled.map(titleCard).join('');
+  $('parkedGroup').hidden = !settled.length;
+  $('parkedSummary').textContent = `${settled.length} merged or parked title${settled.length === 1 ? '' : 's'}, with reasons`;
+  if (isSettled({verdict: filters.verdict})) $('parkedGroup').open = true;
+  $('suggestList').innerHTML = suggested.length ? suggested.map(titleCard).join('') : '<li class="draft-empty">No suggested titles match these filters.</li>';
+  document.querySelectorAll('.ratio-hw[data-hw]').forEach(el => { el.style.width = `${el.dataset.hw}%`; });
+  $('addRecommended').disabled = !ready || !pending.length;
+  $('addRecommended').textContent = pending.length ? `Add ${pending.length} recommended to my board` : 'All recommended titles are on your board';
+  if (!sourcesRendered) {
+    $('titleSources').innerHTML = `<details><summary>All ${Object.keys(SOURCES).length} sources read on ${REVIEWED_ON}</summary><ul>${Object.values(SOURCES).map(x => `<li><a href="${x.url}" target="_blank" rel="noopener noreferrer">${escape(x.label)} ↗</a><span>${escape(x.tier)} · ${escape(x.date)}</span><p>${escape(x.supports)}</p></li>`).join('')}</ul></details>`;
+    sourcesRendered = true;
+  }
+}
+function addTitles(list) {
+  const room = 100 - state.custom.length, fresh = list.filter(r => !isSettled(r) && !titleOnBoard(r)), take = fresh.slice(0, Math.max(0, room));
+  if (!take.length) { notify(room <= 0 ? 'Your board already holds 100 custom proposals.' : 'Those revised titles are already on your board.'); return; }
+  if (mutate(next => { next.custom.push(...take.map(r => titleToProposal(r, `custom-${crypto.randomUUID()}`))); })) notify(`${take.length} revised title${take.length === 1 ? '' : 's'} added to your board${take.length < fresh.length ? '. The 100-proposal limit stopped the rest' : ''}. Check the save status for D1 confirmation.`);
+}
+function openTitlePrint() {
+  const rows = byVerdict(allTitles().filter(r => r.verdict !== 'merge'));
+  openDialog('Capstone title review · SDG 17', `<p>Reviewed ${REVIEWED_ON}. Ratios are effort estimates. Partners are proposed, not confirmed.</p><div class="comparison-scroll" tabindex="0" role="region" aria-label="Title review table"><table class="comparison"><thead><tr><th scope="col">Title</th><th scope="col">Verdict</th><th scope="col">SDG 17 targets</th><th scope="col">HW : SW</th><th scope="col">Not confirmed</th></tr></thead><tbody>${rows.map(r => `<tr><th scope="row">${escape(displayTitle(r))}</th><td>${escape(VERDICTS[r.verdict])}</td><td>${r.targets.join(', ')}</td><td>${ratioLabel(r.effort)}</td><td>${escape(r.unverified || 'None noted')}</td></tr>`).join('')}</tbody></table></div><div class="actions"><button id="printTitleTable" class="btn">Print</button><button id="doneTitlePrint" class="btn btn-secondary">Done</button></div>`, 'comparison-dialog');
+  $('printTitleTable').onclick = () => window.print(); $('doneTitlePrint').onclick = closeDialog;
+}
+document.addEventListener('click', event => {
+  const jump = event.target.closest('a[href^="#title-"]');
+  if (jump) document.querySelector(jump.getAttribute('href'))?.closest('details')?.setAttribute('open', '');
+  const button = event.target.closest('button[data-title-add]');
+  if (button) { const r = titleById(button.dataset.titleAdd); if (r) addTitles([r]); }
+});
+$('addRecommended').onclick = () => addTitles(allTitles().filter(r => r.verdict === 'recommended'));
+$('printTitles').onclick = openTitlePrint;
+$('titleSearch').oninput = $('titleVerdict').onchange = $('titleFit').onchange = $('titleKind').onchange = renderTitles;
 function openDialog(title, body, className = '') {
   returnFocus = document.activeElement; editDirty = false;
   $('dialog').className = className;
