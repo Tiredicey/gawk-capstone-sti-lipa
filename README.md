@@ -62,6 +62,22 @@ Not confirmed, and where we looked:
 - No Philippine rule requiring WCAG for LGU websites turned up.
 - OpenAlex counts measure one index with one phrase. A low count does not prove novelty; read the closest papers for the related studies chapter.
 
+## Second review: section numbers checked (October 3, 2026)
+A second reviewer could not see the law texts and flagged every section number as a risk. We opened all 36 cited laws and LTO v. City of Butuan on Lawphil. All 106 cited sections exist. We then ran 64 subject checks by keyword. Data lives in `public/static/citations.js`. The **Second review** panel shows each point.
+
+- **Reviewer partly right, data privacy (Fix 1).** Ten rows cited only R.A. 10173 Sec. 20 (Security) or Sec. 21 (Accountability). Those are real duties, but the operative tests are Sec. 11 (General Data Privacy Principles), Sec. 12 (Criteria for Lawful Processing) and Sec. 13 (Sensitive Personal Information). Every privacy row now leads with Sec. 11 to 13. Cards with a privacy row show the safe framing sentence.
+- **Reviewer right, NTC as sole anchor (Fix 2).** Every NTC row is now tagged *Hardware compliance*. Poultry titles d09 and n6 now lead with R.A. 8485 Sec. 3 and Sec. 6 as amended by R.A. 10631. d09 and c10 add R.A. 10601 Sec. 3(a), which lists thermal conditioning, livestock and irrigation equipment. d02 adds R.A. 7160 Sec. 458(a)(5)(vi), the council's power to regulate traffic.
+- **Reviewer right, missing basis (Fix 3).** All 90 non-merged titles now have a basis row. Academic integrity titles say *Institutional policy, not statute* and cite R.A. 8293 Secs. 172.1 and 193.1 where authorship is at stake.
+- **Reviewer wrong, LTO v. City of Butuan (Fix 4).** The case exists: G.R. No. 131512, 20 January 2000, penned by Justice Vitug. It now links to the Lawphil full text.
+- **Reviewer wrong, R.A. 7277 Sec. 40 as amended by R.A. 10070.** The citation holds; the amended text creates a PDAO in every city.
+- **Reviewer partly right, R.A. 9485 Sec. 7 as inserted by R.A. 11032.** Our cite was correct (Zero-Contact Policy). Processing-time rules sit in Sec. 6 (Citizen's Charter) and Sec. 9(b), which c36 and c40 now cite too.
+- **Reviewer partly right, R.A. 9482.** Sec. 5 binds pet owners. The stronger anchor for a city system is Sec. 7(1), Responsibilities of the LGUs, now listed first.
+- **Our errors, now fixed.** The OSCA rule is R.A. 7432 Sec. 6 as amended by R.A. 9994 Sec. 6, not R.A. 9994 Sec. 6 alone. EPR Sec. 44-D was inserted by R.A. 11898 Sec. 6, not Sec. 5.
+
+Every statutory cite now names its section subject in parentheses. Each row is tagged *Primary anchor*, *Hardware compliance* or *Institutional basis*. `tests/check.mjs` fails if a statutory cite drops its subject, an NTC row is not tagged hardware, an active title rests on hardware alone, or a privacy row cites only Sec. 20 or 21.
+
+Still not confirmed: the NTC circular texts behind the secondary summary (MC 002-09-2025), NTC rules for 2.4 GHz Bluetooth beacons, and the PNS/BAFS 01:2025 clauses. The keyword checks prove a section matches its subject, not that it supports every argument you build on it. Have counsel or your adviser read the sections you lean on.
+
 ## Legal check of counsel's notes
 Counsel's notes were checked against primary text on October 1, 2026. Data lives in `public/static/legal.js`. Each title card now shows a **Legal basis** list with pinpoint citations and a **Verify against** action naming who to ask. Nine research-heavy titles carry a **Thesis track** tag. That tag is our judgement, not a degree certification. The **Legal check of counsel's notes** panel records every point.
 

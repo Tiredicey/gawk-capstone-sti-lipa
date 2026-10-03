@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE, selectProposals, assessmentProgress, validateDraftBatch} from '../public/static/model.js';
 import {normalizeTitle} from '../public/static/model.js';
 import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, BUILD_WEEKS, THEMES, PRIOR_WORK, themeOf, rankTitles, rankScore, hardwareShare, ratioLabel, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from '../public/static/titles.js';
-import {LEGAL_SOURCES, LEGAL_BASIS, VERIFY, THESIS_TRACK, COUNSEL_REVIEW, COUNSEL_VERDICTS} from '../public/static/legal.js';
+import {LEGAL_SOURCES, LEGAL_BASIS, VERIFY, THESIS_TRACK, COUNSEL_REVIEW, COUNSEL_VERDICTS, REVIEW_FINDINGS, REVIEW_VERDICTS, AUDIT_SUMMARY} from '../public/static/legal.js';
 const base = 'http://localhost:3000';
 let count = 0;
 async function test(name, fn) { await fn(); console.log(`PASS ${++count}: ${name}`); }
@@ -123,6 +123,26 @@ await test('Top 100 catalog: unique titles, themes, prior-work counts, legal bas
   assert.ok(filterTitles(all, {search: 'sign language'}).some(r => r.key === 'c30'));
   const sum = portfolioSummary(all); assert.equal(sum.total, 100); assert.equal(sum.hardwareTitles, 37);
   assert.match(titleToProposal(all.find(r => r.key === 'c15'), 'custom-c15').note, /^Angle: /);
+});
+await test('Second review: every active title has a cited non-hardware anchor with section subjects; DPA rows lead with Secs. 3, 4, 11 to 13', () => {
+  const all = [...TITLE_REVIEWS, ...SUGGESTED_TITLES];
+  for (const r of all.filter(r => r.verdict !== 'merge')) {
+    const rows = LEGAL_BASIS[r.key]; assert.ok(rows && rows.length, `${r.key} has no basis`);
+    assert.ok(rows.some(x => x[3] !== 'hardware'), `${r.key} rests on hardware compliance only`);
+  }
+  for (const [key, rows] of Object.entries(LEGAL_BASIS)) for (const [cite, why, k, tier] of rows) {
+    assert.ok(['primary', 'hardware', 'institutional'].includes(tier), `${key} tier`);
+    if (/^(R\.A\.|B\.P\.) \d+ Secs?\./.test(cite)) assert.match(cite, /\(.+\)/, `${key} cite lacks a section subject: ${cite}`);
+    if (/^NTC /.test(cite)) assert.equal(tier, 'hardware', `${key} NTC row must be hardware compliance`);
+  }
+  for (const [key, rows] of Object.entries(LEGAL_BASIS)) if (rows.some(x => /10173/.test(x[0]))) assert.ok(rows.some(x => /10173 Sec\. (3|4|11|12|13)/.test(x[0])), `${key} cites only DPA Sec. 20 or 21`);
+  assert.match(LEGAL_BASIS.c33[0][0], /R\.A\. 7432 Sec\. 6 .*R\.A\. 9994 Sec\. 6/);
+  assert.match(LEGAL_BASIS.c18[0][0], /R\.A\. 11898 Sec\. 6/);
+  assert.match(LEGAL_BASIS.c11[0][0], /R\.A\. 9482 Sec\. 7\(1\)/);
+  assert.match(LEGAL_SOURCES.butuan.url, /lawphil\.net\/judjuris\/juri2000\/jan2000\/gr_131512_2000/);
+  for (const c of REVIEW_FINDINGS) { assert.ok(REVIEW_VERDICTS[c.verdict]); for (const k of c.sources) assert.ok(LEGAL_SOURCES[k] || SOURCES[k], k); }
+  assert.equal(AUDIT_SUMMARY.realErrors, REVIEW_FINDINGS.filter(c => c.verdict === 'ours').length);
+  assert.ok(!/\u2014/.test(JSON.stringify({LEGAL_BASIS, REVIEW_FINDINGS})));
 });
 let cookie, initial;
 const get = async () => (await fetch(base+'/api/workspace',{headers:cookie?{Cookie:cookie}:{}})).json();

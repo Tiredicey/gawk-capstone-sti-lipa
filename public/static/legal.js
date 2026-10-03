@@ -1,11 +1,14 @@
 import {CATALOG_LEGAL, CATALOG_VERIFY} from './catalog.js';
+import {CITATION_SOURCES, CORRECTED_LEGAL, REVIEW_FINDINGS, REVIEW_VERDICTS, AUDIT_SUMMARY, DPA_FRAMING, CITATIONS_CHECKED_ON} from './citations.js';
+
+export {REVIEW_FINDINGS, REVIEW_VERDICTS, AUDIT_SUMMARY, DPA_FRAMING, CITATIONS_CHECKED_ON};
 
 export const LEGAL_CHECKED_ON = '2026-10-01';
 
 export const LEGAL_SOURCES = {
   lgc: {label: 'R.A. 7160 Local Government Code (Lawphil full text)', url: 'https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html', tier: 'Primary', date: '1991', supports: 'Sec. 458(a)(3)(vi): the sangguniang panlungsod, "Subject to the guidelines prescribed by the Department of Transportation and Communications, regulate the operation of tricycles and grant franchises for the operation thereof within the territorial jurisdiction of the city". Sec. 447(a)(3)(vi) is the municipal twin. Sec. 487(a): "The appointment of the cooperatives officer is optional for the provincial and city governments."'},
   dotc94: {label: 'DOTC Guidelines on the devolution of LTFRB franchising over tricycles-for-hire (LTO, adopted 2 May 1994)', url: 'https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/11/47970', tier: 'Primary', date: '1994', supports: 'The SB/SP shall "Determine, fix, prescribe or periodically adjust fares or rates for the service provided in a zone after public hearing". LTFRB powers over tricycles-for-hire "shall cease on 30 June 1992". LTO keeps vehicle registration.'},
-  butuan: {label: 'LTO v. City of Butuan, G.R. No. 131512 (Supreme Court)', url: 'https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/1/50716', tier: 'Primary', date: '2000', supports: 'The devolved power under Sec. 458(a)(3)(vi) is to regulate operation and grant franchises. Registration and driver licensing stay with the LTO.'},
+  butuan: {label: 'LTO v. City of Butuan, G.R. No. 131512, 20 January 2000 (Lawphil full text)', url: 'https://lawphil.net/judjuris/juri2000/jan2000/gr_131512_2000.html', tier: 'Primary', date: '2000', supports: 'The devolved power under Sec. 458(a)(3)(vi) is to regulate operation and grant franchises. Registration and driver licensing stay with the LTO.'},
   ra10121: {label: 'R.A. 10121 Philippine DRRM Act of 2010 (Supreme Court E-Library)', url: 'https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/2/21121', tier: 'Primary', date: '2010', supports: 'Sec. 12(a): "There shall be established an LDRRMO in every province, city and municipality". Sec. 12(c)(5): operate a multi-hazard early warning system. Sec. 12(c)(12): maintain a database of human resource and equipment. Sec. 12(c)(13): partnership mechanisms with the private sector, CSOs and volunteers.'},
   ra9520: {label: 'R.A. 9520 Philippine Cooperative Code of 2008 (Lawphil)', url: 'https://lawphil.net/statutes/repacts/ra2009/ra_9520_2009.html', tier: 'Primary', date: '2009', supports: 'Art. 5(8): the Cooperative Development Authority is "the government agency in charge of the registration and regulation of cooperatives".'},
   dpa: {label: 'R.A. 10173 Data Privacy Act (NPC full text)', url: 'https://privacy.gov.ph/data-privacy-act/', tier: 'Primary', date: '2012', supports: 'Sec. 3(l) lists sensitive personal information, including information about education and offense proceedings, and does not use the word "biometric". Sec. 13 sets lawful bases for sensitive information. Sec. 20 covers security, with breach notification in Sec. 20(f). Sec. 21(b) requires designating accountable individuals. Sec. 4(d) excludes information processed for research purposes.'},
@@ -16,7 +19,8 @@ export const LEGAL_SOURCES = {
   ntcSrd2020: {label: 'NTC MC No. 01-02-2020 amending Sec. 2 of MC 03-05-2007', url: 'https://region7.ntc.gov.ph/wp-content/uploads/2024/01/MC-01-02-2020.pdf', tier: 'Primary', date: '2020', supports: 'Restates the non-specific SRD table. 868.700 to 869.200 MHz and 869.3 to 869.4 MHz at 25 mW e.r.p.; 433.050 to 434.790 MHz at 10 mW e.r.p. No 915 to 928 MHz entry appears in this table.'},
   ntcRfid: {label: 'NTC MC No. 03-08-2006 RFID bands', url: 'https://region7.ntc.gov.ph/wp-content/uploads/2024/01/MC_03-08-2006_RFID.pdf', tier: 'Primary', date: '2006', supports: 'RFID allowed at 13.553 to 13.567 MHz, 918 to 920 MHz and 2446 to 2454 MHz. Low-power readers up to 500 mW e.r.p. Readers need type approval and one-time registration (PHP 100.00 low power).'},
   embR4a: {label: 'EMB CALABARZON · Air Quality Monitoring Section', url: 'https://calabarzon.emb.gov.ph/air-quality-monitoring-section/', tier: 'Primary', date: 'Page reports CY 2020 data (older than 12 months)', supports: 'Lists five regional stations: Antipolo, Biñan, Santa Rosa, Indang and a mercury station in Calaca, Batangas. None is in Lipa.'},
-  embTaal: {label: 'EMB CALABARZON memo, Taal Volcano air quality update (14 November 2025)', url: 'https://calabarzon.emb.gov.ph/wp-content/uploads/2025/11/AQI_Update__Tagaytay_and_San_Nicolas_Batangas_.pdf', tier: 'Primary', date: '2025-11-14', supports: 'Monitoring at Sky Ranch, Tagaytay City and San Nicolas, Batangas, the latter "using indicative method".'}
+  embTaal: {label: 'EMB CALABARZON memo, Taal Volcano air quality update (14 November 2025)', url: 'https://calabarzon.emb.gov.ph/wp-content/uploads/2025/11/AQI_Update__Tagaytay_and_San_Nicolas_Batangas_.pdf', tier: 'Primary', date: '2025-11-14', supports: 'Monitoring at Sky Ranch, Tagaytay City and San Nicolas, Batangas, the latter "using indicative method".'},
+  ...CITATION_SOURCES
 };
 
 export const LEGAL_BASIS = {
@@ -43,7 +47,8 @@ export const LEGAL_BASIS = {
   n4: [['DENR DAO 2020-14', 'Report against the national AQI breakpoints', 'denrAqi'], ['EMB CALABARZON memo (Nov 2025)', 'San Nicolas, Batangas uses an indicative method', 'embTaal']],
   n5: [['R.A. 10121 Sec. 12(c)(12)', 'The LDRRMO must keep a database of human resource and equipment', 'ra10121'], ['NTC MC 03-08-2006', 'RFID at 918 to 920 MHz; readers need type approval and registration', 'ntcRfid']],
   n6: [['NTC MC 002-09-2025 (secondary summary)', 'Use LTE, not 2G or 3G modules', 'ntc']],
-  ...CATALOG_LEGAL
+  ...CATALOG_LEGAL,
+  ...CORRECTED_LEGAL
 };
 
 export const VERIFY = {

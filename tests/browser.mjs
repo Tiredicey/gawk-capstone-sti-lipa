@@ -179,7 +179,7 @@ await test('SDG 17 title review filters, links drafts and adds revised titles on
  await page.locator('#addRecommended').click();await saved(page);
  assert.equal((await state(page)).custom.length,before.length+1+pending);assert.equal(await page.locator('#addRecommended').isDisabled(),true);
  await page.locator('#printTitles').click();assert.ok(await page.locator('.comparison tbody tr').count()>30);await close();
- assert.equal(await page.locator('#titleSources li').count(),74);
+ assert.equal(await page.locator('#titleSources li').count(),78);assert.equal(await page.locator('#reviewList .counsel-item').count(),10);assert.equal(await page.locator('#reviewList [data-verdict="ours"]').count(),2);assert.ok(await page.locator('#title-d09 .legal-basis li[data-tier="primary"]').count()>=2);
  assert.equal(await page.locator('#counselList .counsel-item').count(),11);assert.equal(await page.locator('#counselList [data-verdict="corrected"]').count(),1);
  assert.ok(await page.locator('#title-r1 .legal-basis li').count()>=3);assert.match(await page.locator('#title-r1 .verify-action').first().textContent(),/Sangguniang Panlungsod/);
  assert.equal(await page.locator('#title-review .thesis-tag').count(),9);
