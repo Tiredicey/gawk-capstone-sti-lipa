@@ -1,4 +1,8 @@
 import {normalizeTitle} from './model.js';
+import {CATALOG_SOURCES, CATALOG_TITLES, PRIOR_WORK, THEMES, themeOf} from './catalog.js';
+import {LEGAL_SOURCES} from './legal.js';
+
+export {THEMES, PRIOR_WORK, themeOf};
 
 export const REVIEWED_ON = '2026-10-01';
 
@@ -6,6 +10,8 @@ export const SDG17_TARGETS = {
   '17.6': 'Cooperation on and access to science, technology and innovation, and knowledge sharing on mutually agreed terms.',
   '17.7': 'Development, transfer and diffusion of environmentally sound technologies.',
   '17.8': 'Enhanced use of enabling technology, in particular information and communications technology.',
+  '17.11': 'Significantly increase the exports of developing countries.',
+  '17.14': 'Enhance policy coherence for sustainable development.',
   '17.9': 'Effective, targeted capacity-building to support national plans for the SDGs.',
   '17.16': 'Multi-stakeholder partnerships that mobilize and share knowledge, expertise and technology.',
   '17.17': 'Effective public, public-private and civil society partnerships.',
@@ -13,14 +19,14 @@ export const SDG17_TARGETS = {
   '17.19': 'Measurements of progress and statistical capacity-building.'
 };
 
-export const SOURCES = {
+const BASE_SOURCES = {
   un17: {label: 'UN DESA · SDG 17 targets and indicators', url: 'https://sdgs.un.org/goals/goal17', tier: 'Primary', date: 'Retrieved 2026-10-01', supports: 'Wording of targets 17.6 to 17.19 used in every alignment.'},
   cmo25: {label: 'CHED · 2015 Memorandum Orders list (CMO No. 25 s.2015)', url: 'https://legacy.ched.gov.ph/2015-ched-memorandum-orders/', tier: 'Primary listing', date: '2015', supports: 'CMO 25 s.2015 is the PSG for BSCS, BSIS and BSIT. Section 8.4 text (capstone required for BSIT) was read from a third-party copy, not the CHED PDF.'},
   sti: {label: 'STI IT/IS Capstone Project Guidelines (copy hosted on Studocu)', url: 'https://www.studocu.com/ph/document/sti-college/information-technology/capstone-project-guidelines/61007579', tier: 'Third-party copy', date: 'Undated', supports: 'Proposal acceptability by content and scope, feasibility by cost, time and effort; two terms; separate hardware and software resource lists. Confirm the current edition with your coordinator.'},
   psaEgg: {label: 'PSA CALABARZON · Poultry Production, Q1 2026', url: 'https://rsso04a.psa.gov.ph/content/poultry-production-calabarzon-first-quarter-2026', tier: 'Primary', date: '2026-08-04', supports: 'Batangas is the top chicken egg producer in CALABARZON at 54,219.64 metric tons in Q1 2026.'},
   flood: {label: 'VERA Files fact check citing ABS-CBN, Lipa floods', url: 'https://verafiles.org/articles/fact-check-old-video-passed-off-as-recent-flooding-in-batangas', tier: 'News (cites ABS-CBN)', date: '2026-08-17', supports: 'At least 15 Lipa City barangays had waist-deep flooding in August 2026.'},
   lipad: {label: 'UP DREAM LiPAD · City of Lipa 25-year flood hazard map', url: 'https://lipad-fmc.dream.upd.edu.ph/layers/geonode%3Aph041014000_fh25yr_10m', tier: 'Academic dataset', date: '2017 (older than 12 months)', supports: 'A published flood hazard layer exists for Lipa for sensor siting. Treat as potentially outdated.'},
-  lipaOffices: {label: 'Lipa City · Departments and Offices', url: 'https://lipa.gov.ph/departments-offices/', tier: 'Primary', date: 'Retrieved 2026-10-01', supports: 'DRRM, Health, ENRO, Agriculture, Veterinary, Cooperatives, Traffic Management and MIS offices exist as possible partners. No partner has agreed to anything.'},
+  lipaOffices: {label: 'Lipa City · Departments and Offices', url: 'https://lipa.gov.ph/departments-offices/', tier: 'Primary', date: 'Retrieved 2026-10-01, rechecked 2026-10-03', supports: 'Lists DRRM, Health, ENRO, Agriculture, Veterinary, Cooperatives, Traffic Management, MIS, Social Welfare and Development, Planning and Development, Permits and Licensing, Engineering, General Services and Civil Registrar offices. No PESO, PDAO, OSCA or tourism office appeared on the page. No partner has agreed to anything.'},
   ntc: {label: 'eLegal summary of NTC MC No. 002-09-2025', url: 'https://elegal.ph/ntc-orders-phaseout-of-2g-and-3g-mobile-networks/', tier: 'Secondary summary', date: '2025-11-05', supports: '3G shutdown by 31 December 2026, 2G on a separate timeline, no new type approval for 2G/3G-only devices. Read the NTC circular before citing.'},
   sim800l: {label: 'e-Gizmo SIM800L module document', url: 'https://e-gizmo.net/oc/kits%20documents/SIM800L%20module/SIM800L%20module.pdf', tier: 'Vendor document', date: 'Undated', supports: 'SIM800L is a quad-band GSM/GPRS (2G) module. Seen in a search result, not opened.'},
   denrAqi: {label: 'EMB-DENR · DAO 2020-14 PM2.5 AQI breakpoints', url: 'https://air.emb.gov.ph/denr-administrative-order-on-establishing-breakpoints-for-pm-2-5-air-quality-index-reviewed-and-approved-by-emb/', tier: 'Primary', date: 'Undated page', supports: 'Six PM2.5 AQI levels from Good (0 to 25 µg/m³) to Emergency (above 91).'},
@@ -36,6 +42,9 @@ export const SOURCES = {
   liang: {label: 'Liang et al., Patterns (2023) · GPT detectors are biased against non-native English writers', url: 'https://www.sciencedirect.com/science/article/pii/S2666389923001307', tier: 'Peer-reviewed', date: '2023 (older than 12 months)', supports: 'Detectors frequently misclassify non-native English writing as AI-generated.'},
   moss: {label: 'Stanford MOSS', url: 'https://theory.stanford.edu/~aiken/moss/', tier: 'Primary', date: 'Undated', supports: 'An established code-similarity service exists, so new code tools need a comparison baseline.'}
 };
+
+const {ntcSrd, ntcRfid, ra10121, ra9520} = LEGAL_SOURCES;
+export const SOURCES = {...BASE_SOURCES, ...CATALOG_SOURCES, ntcSrd, ntcRfid, ra10121, ra9520};
 
 export const VERDICTS = {recommended: 'Recommended', revise: 'Revise before proposing', merge: 'Merge into another title', park: 'Park for now'};
 export const FITS = {strong: 'Strong SDG 17 fit', moderate: 'Moderate SDG 17 fit', weak: 'Weak SDG 17 fit'};
@@ -182,7 +191,8 @@ export const SUGGESTED_TITLES = [
   t('n6', '', 'Power-Outage and Overheat Alarm with LTE SMS Escalation for Small Layer Poultry Houses', 'recommended', 'strong', ['17.6', '17.8'], [9, 7],
     'A low-cost alarm small farms can adopt, shared through the City Veterinary Office.',
     'Mains-loss detection, temperature sensor, backup battery, LTE modem, escalation contact list.',
-    'Use LTE modules given the 2G and 3G phase-out.', ['psaEgg', 'ntc', 'lipaOffices', 'un17'])
+    'Use LTE modules given the 2G and 3G phase-out.', ['psaEgg', 'ntc', 'lipaOffices', 'un17']),
+  ...CATALOG_TITLES
 ];
 
 export const hardwareShare = effort => {
@@ -196,12 +206,20 @@ export const displayTitle = r => r.revised || r.original;
 const reviewIndex = new Map(TITLE_REVIEWS.map(r => [normalizeTitle(r.original), r]));
 export const reviewForTitle = title => reviewIndex.get(normalizeTitle(title)) || null;
 
-export function filterTitles(list, {search = '', verdict = 'all', fit = 'all', kind = 'all'} = {}) {
+export function filterTitles(list, {search = '', verdict = 'all', fit = 'all', kind = 'all', theme = 'all'} = {}) {
   const query = normalizeTitle(search);
   return list.filter(r => (verdict === 'all' || r.verdict === verdict)
     && (fit === 'all' || r.fit === fit)
+    && (theme === 'all' || themeOf(r) === theme)
     && (kind === 'all' || (kind === 'hardware' ? r.effort[0] > 0 : r.effort[0] === 0))
-    && (!query || normalizeTitle([r.original, r.revised, r.why, r.scope, r.risks, r.targets.join(' ')].join(' ')).includes(query)));
+    && (!query || normalizeTitle([r.original, r.revised, r.why, r.scope, r.risks, r.angle || '', THEMES[themeOf(r)], r.targets.join(' ')].join(' ')).includes(query)));
+}
+
+const VERDICT_POINTS = {recommended: 4, revise: 2, merge: 0, park: 0};
+const FIT_POINTS = {strong: 3, moderate: 2, weak: 1};
+export const rankScore = r => VERDICT_POINTS[r.verdict] + FIT_POINTS[r.fit] + (r.effort[0] > 0 ? 1 : 0) + (r.unverified ? 0 : 1);
+export function rankTitles(list) {
+  return list.map((r, i) => [r, i]).sort((a, b) => rankScore(b[0]) - rankScore(a[0]) || a[1] - b[1]).map(([r], i) => ({key: r.key, rank: i + 1, score: rankScore(r)}));
 }
 
 export function portfolioSummary(list) {
@@ -218,6 +236,6 @@ export function titleToProposal(r, id) {
     title: r.revised,
     domain: `SDG 17 · ${r.targets.join(', ')}`,
     desc: `${r.why}\n\nScope: ${r.scope}\n\nHardware : software effort ${ratioLabel(r.effort)} (estimated ${r.effort[0]} of ${BUILD_WEEKS} build weeks on hardware, ${r.effort[1]} on software).`,
-    note: `Risks: ${r.risks}${r.unverified ? `\nNot confirmed: ${r.unverified}` : ''}\nSources: ${sourceList}`.slice(0, 2000)
+    note: `${r.angle ? `Angle: ${r.angle}\n` : ''}Risks: ${r.risks}${r.unverified ? `\nNot confirmed: ${r.unverified}` : ''}\nSources: ${sourceList}`.slice(0, 2000)
   };
 }

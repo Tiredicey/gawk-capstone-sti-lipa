@@ -160,9 +160,11 @@ await test('Group chat drafts render escaped and copy into the board once',async
 });
 await test('SDG 17 title review filters, links drafts and adds revised titles once',async()=>{
  const t=page.locator('#title-review');
- assert.equal(await page.locator('#titleReviewCount').textContent(),'43');
+ assert.equal(await page.locator('#titleReviewCount').textContent(),'100');
  assert.equal(await page.locator('#titleList .title-item').count()+await page.locator('#parkedList .title-item').count(),43);
- assert.equal(await page.locator('#suggestList .title-item').count(),6);assert.equal(await page.locator('#parkedGroup').getAttribute('open'),null);
+ assert.equal(await page.locator('#suggestList .title-item').count(),12);assert.match(await page.locator('#suggestStatus').textContent(),/Showing 12 of 57/);await page.locator('#suggestMore').click();assert.equal(await page.locator('#suggestList .title-item').count(),24);assert.equal(await page.evaluate(()=>document.activeElement.closest('#suggestList')!==null),true);
+ await page.locator('#titleTheme').selectOption('inclusion');assert.equal(await page.locator('#suggestList .title-item').count(),6);assert.ok(await page.locator('#title-c30 .theme-chip').isVisible());await page.locator('#titleTheme').selectOption('all');
+ await page.locator('#titleOrder').selectOption('rank');assert.equal(await page.locator('#titleList .title-item .rank').first().textContent(),'#1');await page.locator('#titleOrder').selectOption('verdict');assert.equal(await page.locator('#parkedGroup').getAttribute('open'),null);
  assert.equal(await page.locator('#titleList .title-item').first().getAttribute('data-verdict'),'recommended');
  assert.equal(await page.evaluate(()=>document.querySelector('#title-d07 .ratio-hw').style.width),'50%');
  await page.locator('#titleKind').selectOption('software');assert.equal(await t.locator('.ratio-hw:not([data-hw="0"])').count(),0);await page.locator('#titleKind').selectOption('all');
@@ -177,7 +179,7 @@ await test('SDG 17 title review filters, links drafts and adds revised titles on
  await page.locator('#addRecommended').click();await saved(page);
  assert.equal((await state(page)).custom.length,before.length+1+pending);assert.equal(await page.locator('#addRecommended').isDisabled(),true);
  await page.locator('#printTitles').click();assert.ok(await page.locator('.comparison tbody tr').count()>30);await close();
- assert.equal(await page.locator('#titleSources li').count(),35);
+ assert.equal(await page.locator('#titleSources li').count(),74);
  assert.equal(await page.locator('#counselList .counsel-item').count(),11);assert.equal(await page.locator('#counselList [data-verdict="corrected"]').count(),1);
  assert.ok(await page.locator('#title-r1 .legal-basis li').count()>=3);assert.match(await page.locator('#title-r1 .verify-action').first().textContent(),/Sangguniang Panlungsod/);
  assert.equal(await page.locator('#title-review .thesis-tag').count(),9);

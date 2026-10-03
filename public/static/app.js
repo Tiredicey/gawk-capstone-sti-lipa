@@ -1,5 +1,5 @@
 import {LEGAL_SOURCES, LEGAL_BASIS, VERIFY, THESIS_TRACK, COUNSEL_REVIEW, COUNSEL_VERDICTS, LEGAL_CHECKED_ON} from './legal.js';
-import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, VERDICTS, FITS, REVIEWED_ON, ratioLabel, hardwareShare, projectType, displayTitle, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from './titles.js';
+import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, VERDICTS, FITS, REVIEWED_ON, THEMES, PRIOR_WORK, themeOf, rankTitles, ratioLabel, hardwareShare, projectType, displayTitle, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from './titles.js';
 import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, selectProposals, assessmentProgress, normalizeTitle} from './model.js';
 
 const $ = id => document.getElementById(id);
@@ -131,8 +131,13 @@ $('addAllDrafts').onclick = () => addDrafts(drafts);
 $('refreshDrafts').onclick = loadDrafts;
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draftsLoaded) loadDrafts(); });
 const allTitles = () => [...TITLE_REVIEWS, ...SUGGESTED_TITLES];
+const RANKS = new Map(rankTitles(allTitles()).map(x => [x.key, x.rank]));
+const SUGGEST_PAGE = 12;
+let suggestShown = SUGGEST_PAGE;
+const byRank = list => [...list].sort((a, b) => RANKS.get(a.key) - RANKS.get(b.key));
 const anySource = k => LEGAL_SOURCES[k] || SOURCES[k];
 const sourceLink = k => anySource(k) ? `<a href="${anySource(k).url}" target="_blank" rel="noopener noreferrer">${escape(anySource(k).label)} ↗</a>` : '';
+const priorBlock = r => PRIOR_WORK[r.key] ? `<dt>Prior work</dt><dd>${PRIOR_WORK[r.key][1].toLocaleString('en-US')} OpenAlex works match “${escape(PRIOR_WORK[r.key][0])}” in title or abstract. Read the closest ones before claiming novelty. ${sourceLink('openalexApi')}</dd>` : '';
 const legalBlock = r => LEGAL_BASIS[r.key] ? `<dt>Legal basis</dt><dd><ul class="legal-basis">${LEGAL_BASIS[r.key].map(([cite, why, k]) => `<li><strong>${escape(cite)}</strong> ${escape(why)}${anySource(k) ? ` <a href="${anySource(k).url}" target="_blank" rel="noopener noreferrer" aria-label="Source for ${escape(cite)}">↗</a>` : ''}</li>`).join('')}</ul></dd>` : '';
 const verifyBlock = r => VERIFY[r.key] ? `<dt>Verify against</dt><dd class="verify-action">${escape(VERIFY[r.key][0])}${VERIFY[r.key][1] ? ` ${sourceLink(VERIFY[r.key][1])}` : ''}</dd>` : '';
 const thesisTag = r => THESIS_TRACK.includes(r.key) ? '<span class="thesis-tag" title="Research-heavy. Better suited to a thesis or graduate track, by our judgement.">Thesis track</span>' : '';
@@ -141,7 +146,7 @@ const titleOnBoard = r => allProposals().some(p => normalizeTitle(p.title) === n
 const titleById = key => allTitles().find(r => r.key === key);
 const verdictOrder = {recommended: 0, revise: 1, merge: 2, park: 3};
 const byVerdict = list => list.map((r, i) => [r, i]).sort((a, b) => verdictOrder[a[0].verdict] - verdictOrder[b[0].verdict] || a[1] - b[1]).map(([r]) => r);
-const titleBadges = r => `<div class="title-head"><span class="verdict verdict-${r.verdict}">${escape(VERDICTS[r.verdict])}</span><span class="fit fit-${r.fit}">${escape(FITS[r.fit])}</span>${thesisTag(r)}<span class="targets">${r.targets.map(x => `<abbr title="${escape(SDG17_TARGETS[x])}">${x}</abbr>`).join('')}</span></div>`;
+const titleBadges = r => `<div class="title-head"><span class="rank" title="Position in the Top 100 order">#${RANKS.get(r.key)}</span><span class="verdict verdict-${r.verdict}">${escape(VERDICTS[r.verdict])}</span><span class="fit fit-${r.fit}">${escape(FITS[r.fit])}</span>${thesisTag(r)}<span class="theme-chip">${escape(THEMES[themeOf(r)])}</span><span class="targets">${r.targets.map(x => `<abbr title="${escape(SDG17_TARGETS[x])}">${x}</abbr>`).join('')}</span></div>`;
 function compactTitleCard(r) {
   const target = r.mergeInto && titleById(r.mergeInto);
   const next = target ? `<a class="compact-link" href="#title-${target.key}">Merges into: ${escape(displayTitle(target))} ↓</a>` : r.revised ? `<p class="compact-why">If revived: ${escape(r.revised)}</p>` : '';
@@ -150,30 +155,37 @@ function compactTitleCard(r) {
 function titleCard(r) {
   if (isSettled(r)) return compactTitleCard(r);
   const added = titleOnBoard(r), hw = hardwareShare(r.effort);
-  return `<li id="title-${r.key}" class="title-item" data-verdict="${r.verdict}" tabindex="-1">${titleBadges(r)}${r.original ? `<p class="title-original"><span>Original</span>${escape(r.original)}</p>` : ''}<h3 class="title-revised">${escape(r.revised)}</h3><div class="ratio" role="img" aria-label="Estimated hardware ${hw} percent, software ${100 - hw} percent"><span class="ratio-hw" data-hw="${hw}"></span></div><p class="ratio-label"><strong>Hardware : software ${ratioLabel(r.effort)}</strong> · ${projectType(r.effort)} · estimate</p>${r.unverified ? '<p class="unverified-flag">Has unconfirmed points</p>' : ''}<details class="title-details"><summary>SDG 17 link, scope, risks and sources</summary><dl class="title-facts"><dt>SDG 17 link</dt><dd>${escape(r.why)}</dd><dt>Scope</dt><dd>${escape(r.scope)}</dd><dt>Risks</dt><dd>${escape(r.risks)}</dd>${legalBlock(r)}${r.unverified ? `<dt>Not confirmed</dt><dd class="unverified">${escape(r.unverified)}</dd>` : ''}${verifyBlock(r)}<dt>Sources</dt><dd class="title-cites">${r.sources.map(k => `<a href="${SOURCES[k].url}" target="_blank" rel="noopener noreferrer">${escape(SOURCES[k].label)} ↗</a>`).join('')}</dd></dl></details><div class="title-item-actions"><button class="btn btn-secondary" data-title-add="${r.key}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add revised title to my board'}</button></div></li>`;
+  return `<li id="title-${r.key}" class="title-item" data-verdict="${r.verdict}" tabindex="-1">${titleBadges(r)}${r.original ? `<p class="title-original"><span>Original</span>${escape(r.original)}</p>` : ''}<h3 class="title-revised">${escape(r.revised)}</h3><div class="ratio" role="img" aria-label="Estimated hardware ${hw} percent, software ${100 - hw} percent"><span class="ratio-hw" data-hw="${hw}"></span></div><p class="ratio-label"><strong>Hardware : software ${ratioLabel(r.effort)}</strong> · ${projectType(r.effort)} · estimate</p>${r.unverified ? '<p class="unverified-flag">Has unconfirmed points</p>' : ''}<details class="title-details"><summary>SDG 17 link, scope, risks and sources</summary><dl class="title-facts"><dt>SDG 17 link</dt><dd>${escape(r.why)}</dd><dt>Scope</dt><dd>${escape(r.scope)}</dd>${r.angle ? `<dt>Angle</dt><dd>${escape(r.angle)}</dd>` : ''}${priorBlock(r)}<dt>Risks</dt><dd>${escape(r.risks)}</dd>${legalBlock(r)}${r.unverified ? `<dt>Not confirmed</dt><dd class="unverified">${escape(r.unverified)}</dd>` : ''}${verifyBlock(r)}<dt>Sources</dt><dd class="title-cites">${r.sources.map(k => `<a href="${SOURCES[k].url}" target="_blank" rel="noopener noreferrer">${escape(SOURCES[k].label)} ↗</a>`).join('')}</dd></dl></details><div class="title-item-actions"><button class="btn btn-secondary" data-title-add="${r.key}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add revised title to my board'}</button></div></li>`;
 }
 let sourcesRendered = false;
 function renderTitles() {
-  const filters = {search: $('titleSearch').value, verdict: $('titleVerdict').value, fit: $('titleFit').value, kind: $('titleKind').value};
-  const shown = byVerdict(filterTitles(TITLE_REVIEWS, filters)), suggested = filterTitles(SUGGESTED_TITLES, filters), sum = portfolioSummary(TITLE_REVIEWS);
+  const filters = {search: $('titleSearch').value, verdict: $('titleVerdict').value, fit: $('titleFit').value, kind: $('titleKind').value, theme: $('titleTheme').value};
+  const order = $('titleOrder').value === 'rank' ? byRank : byVerdict;
+  const shown = order(filterTitles(TITLE_REVIEWS, filters)), suggested = order(filterTitles(SUGGESTED_TITLES, filters)), sum = portfolioSummary(TITLE_REVIEWS), whole = portfolioSummary(allTitles());
   const main = shown.filter(r => !isSettled(r)), settled = shown.filter(isSettled);
   const pending = allTitles().filter(r => r.verdict === 'recommended' && !titleOnBoard(r));
-  $('titleReviewCount').textContent = TITLE_REVIEWS.length;
+  $('titleReviewCount').textContent = allTitles().length;
+  $('suggestCount').textContent = SUGGESTED_TITLES.length;
   $('titleReviewStatus').textContent = `${shown.length + suggested.length} of ${TITLE_REVIEWS.length + SUGGESTED_TITLES.length} shown`;
-  $('titlePortfolio').innerHTML = [['Titles reviewed', sum.total], ['Recommended', sum.recommended], ['Revise first', sum.revise], ['Merge', sum.merge], ['Park', sum.park], ['With hardware', `${sum.hardwareTitles} of ${sum.active}`], ['Average hardware effort', `${sum.hardwareShare}%`]].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('titlePortfolio').innerHTML = [['Titles in the Top 100', whole.total], ['Recommended overall', whole.recommended], ['With hardware overall', `${whole.hardwareTitles} of ${whole.active}`], ['Titles reviewed', sum.total], ['Recommended', sum.recommended], ['Revise first', sum.revise], ['Merge', sum.merge], ['Park', sum.park], ['With hardware', `${sum.hardwareTitles} of ${sum.active}`], ['Average hardware effort', `${sum.hardwareShare}%`]].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
   $('titleList').innerHTML = main.length ? main.map(titleCard).join('') : `<li class="draft-empty">${settled.length ? 'Only merged or parked titles match. They are listed in the group below.' : 'No reviewed titles match these filters.'}</li>`;
   $('parkedList').innerHTML = settled.map(titleCard).join('');
   $('parkedGroup').hidden = !settled.length;
   $('parkedSummary').textContent = `${settled.length} merged or parked title${settled.length === 1 ? '' : 's'}, with reasons`;
   if (isSettled({verdict: filters.verdict})) $('parkedGroup').open = true;
-  $('suggestList').innerHTML = suggested.length ? suggested.map(titleCard).join('') : '<li class="draft-empty">No suggested titles match these filters.</li>';
+  const visible = suggested.slice(0, suggestShown);
+  $('suggestList').innerHTML = visible.length ? visible.map(titleCard).join('') : '<li class="draft-empty">No suggested titles match these filters.</li>';
+  $('suggestMore').hidden = suggested.length <= visible.length;
+  $('suggestMore').textContent = `Show ${Math.min(SUGGEST_PAGE, suggested.length - visible.length)} more of ${suggested.length - visible.length} remaining`;
+  $('suggestStatus').textContent = suggested.length ? `Showing ${visible.length} of ${suggested.length}` : '';
   document.querySelectorAll('.ratio-hw[data-hw]').forEach(el => { el.style.width = `${el.dataset.hw}%`; });
   $('addRecommended').disabled = !ready || !pending.length;
   $('addRecommended').textContent = pending.length ? `Add ${pending.length} recommended to my board` : 'All recommended titles are on your board';
   if (!sourcesRendered) {
     $('counselList').innerHTML = COUNSEL_REVIEW.map(c => `<li class="counsel-item" data-verdict="${c.verdict}"><div class="counsel-head"><h4>${escape(c.item)}</h4><span class="counsel-verdict">${escape(COUNSEL_VERDICTS[c.verdict])}</span></div><p>${escape(c.finding)}</p><p class="counsel-action"><strong>Action.</strong> ${escape(c.action)}</p>${c.sources.length ? `<p class="title-cites">${c.sources.map(sourceLink).join('')}</p>` : ''}</li>`).join('');
     $('counselSummary').textContent = `${COUNSEL_REVIEW.length} points checked on ${LEGAL_CHECKED_ON}: ${Object.entries(COUNSEL_VERDICTS).map(([k, label]) => [COUNSEL_REVIEW.filter(c => c.verdict === k).length, label.toLowerCase()]).filter(([n]) => n).map(([n, label]) => `${n} ${label}`).join(', ')}`;
-    $('titleSources').innerHTML = `<details><summary>All ${Object.keys(SOURCES).length + Object.keys(LEGAL_SOURCES).length} sources read on ${REVIEWED_ON}</summary><ul>${[...Object.values(SOURCES), ...Object.values(LEGAL_SOURCES)].map(x => `<li><a href="${x.url}" target="_blank" rel="noopener noreferrer">${escape(x.label)} ↗</a><span>${escape(x.tier)} · ${escape(x.date)}</span><p>${escape(x.supports)}</p></li>`).join('')}</ul></details>`;
+    const everySource = [...new Set([...Object.values(SOURCES), ...Object.values(LEGAL_SOURCES)])];
+    $('titleSources').innerHTML = `<details><summary>All ${everySource.length} sources read on ${REVIEWED_ON} and 2026-10-03</summary><ul>${everySource.map(x => `<li><a href="${x.url}" target="_blank" rel="noopener noreferrer">${escape(x.label)} ↗</a><span>${escape(x.tier)} · ${escape(x.date)}</span><p>${escape(x.supports)}</p></li>`).join('')}</ul></details>`;
     sourcesRendered = true;
   }
 }
@@ -183,8 +195,8 @@ function addTitles(list) {
   if (mutate(next => { next.custom.push(...take.map(r => titleToProposal(r, `custom-${crypto.randomUUID()}`))); })) notify(`${take.length} revised title${take.length === 1 ? '' : 's'} added to your board${take.length < fresh.length ? '. The 100-proposal limit stopped the rest' : ''}. Check the save status for D1 confirmation.`);
 }
 function openTitlePrint() {
-  const rows = byVerdict(allTitles().filter(r => r.verdict !== 'merge'));
-  openDialog('Capstone title review · SDG 17', `<p>Reviewed ${REVIEWED_ON}. Ratios are effort estimates. Partners are proposed, not confirmed.</p><div class="comparison-scroll" tabindex="0" role="region" aria-label="Title review table"><table class="comparison"><thead><tr><th scope="col">Title</th><th scope="col">Verdict</th><th scope="col">SDG 17 targets</th><th scope="col">HW : SW</th><th scope="col">Legal basis</th><th scope="col">Verify against</th></tr></thead><tbody>${rows.map(r => `<tr><th scope="row">${escape(displayTitle(r))}</th><td>${escape(VERDICTS[r.verdict])}</td><td>${r.targets.join(', ')}</td><td>${ratioLabel(r.effort)}</td><td>${escape((LEGAL_BASIS[r.key] || []).map(x => x[0]).join('; ') || 'None noted')}</td><td>${escape(VERIFY[r.key]?.[0] || r.unverified || 'None noted')}</td></tr>`).join('')}</tbody></table></div><div class="actions"><button id="printTitleTable" class="btn">Print</button><button id="doneTitlePrint" class="btn btn-secondary">Done</button></div>`, 'comparison-dialog');
+  const rows = byRank(allTitles().filter(r => r.verdict !== 'merge'));
+  openDialog('Capstone title review · SDG 17', `<p>Reviewed ${REVIEWED_ON}. Ratios are effort estimates. Partners are proposed, not confirmed.</p><div class="comparison-scroll" tabindex="0" role="region" aria-label="Title review table"><table class="comparison"><thead><tr><th scope="col">#</th><th scope="col">Title</th><th scope="col">Theme</th><th scope="col">Verdict</th><th scope="col">SDG 17 targets</th><th scope="col">HW : SW</th><th scope="col">Legal basis</th><th scope="col">Verify against</th></tr></thead><tbody>${rows.map(r => `<tr><td>${RANKS.get(r.key)}</td><th scope="row">${escape(displayTitle(r))}</th><td>${escape(THEMES[themeOf(r)])}</td><td>${escape(VERDICTS[r.verdict])}</td><td>${r.targets.join(', ')}</td><td>${ratioLabel(r.effort)}</td><td>${escape((LEGAL_BASIS[r.key] || []).map(x => x[0]).join('; ') || 'None noted')}</td><td>${escape(VERIFY[r.key]?.[0] || r.unverified || 'None noted')}</td></tr>`).join('')}</tbody></table></div><div class="actions"><button id="printTitleTable" class="btn">Print</button><button id="doneTitlePrint" class="btn btn-secondary">Done</button></div>`, 'comparison-dialog');
   $('printTitleTable').onclick = () => window.print(); $('doneTitlePrint').onclick = closeDialog;
 }
 document.addEventListener('click', event => {
@@ -195,7 +207,10 @@ document.addEventListener('click', event => {
 });
 $('addRecommended').onclick = () => addTitles(allTitles().filter(r => r.verdict === 'recommended'));
 $('printTitles').onclick = openTitlePrint;
-$('titleSearch').oninput = $('titleVerdict').onchange = $('titleFit').onchange = $('titleKind').onchange = renderTitles;
+const resetTitles = () => { suggestShown = SUGGEST_PAGE; renderTitles(); };
+$('titleSearch').oninput = $('titleVerdict').onchange = $('titleFit').onchange = $('titleKind').onchange = $('titleTheme').onchange = $('titleOrder').onchange = resetTitles;
+$('titleTheme').innerHTML = `<option value="all">All themes</option>${Object.entries(THEMES).map(([k, v]) => `<option value="${k}">${escape(v)} (${allTitles().filter(r => themeOf(r) === k).length})</option>`).join('')}`;
+$('suggestMore').onclick = () => { const first = suggestShown; suggestShown += SUGGEST_PAGE; renderTitles(); $('suggestList').children[first]?.focus(); };
 function openDialog(title, body, className = '') {
   returnFocus = document.activeElement; editDirty = false;
   $('dialog').className = className;

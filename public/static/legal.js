@@ -1,3 +1,5 @@
+import {CATALOG_LEGAL, CATALOG_VERIFY} from './catalog.js';
+
 export const LEGAL_CHECKED_ON = '2026-10-01';
 
 export const LEGAL_SOURCES = {
@@ -40,7 +42,8 @@ export const LEGAL_BASIS = {
   n3: [['R.A. 9520 Art. 5(8)', 'Cooperatives are registered and regulated by the CDA', 'ra9520'], ['R.A. 7160 Sec. 487', 'City cooperatives officer, if appointed, assists cooperatives', 'lgc']],
   n4: [['DENR DAO 2020-14', 'Report against the national AQI breakpoints', 'denrAqi'], ['EMB CALABARZON memo (Nov 2025)', 'San Nicolas, Batangas uses an indicative method', 'embTaal']],
   n5: [['R.A. 10121 Sec. 12(c)(12)', 'The LDRRMO must keep a database of human resource and equipment', 'ra10121'], ['NTC MC 03-08-2006', 'RFID at 918 to 920 MHz; readers need type approval and registration', 'ntcRfid']],
-  n6: [['NTC MC 002-09-2025 (secondary summary)', 'Use LTE, not 2G or 3G modules', 'ntc']]
+  n6: [['NTC MC 002-09-2025 (secondary summary)', 'Use LTE, not 2G or 3G modules', 'ntc']],
+  ...CATALOG_LEGAL
 };
 
 export const VERIFY = {
@@ -55,7 +58,8 @@ export const VERIFY = {
   d33: ['R.A. 10173 does not list biometrics, and NPC Advisory Opinion 2017-63 treated signatures as personal, not sensitive, information. Check later NPC issuances before classifying keystroke data.', 'npc2017'],
   d34: ['Ask the STI College Lipa IT office which learning management system it runs.', ''],
   n4: ['Same as the air quality title: confirm a reference monitor with EMB CALABARZON.', 'embR4a'],
-  n5: ['Interview the Lipa City DRRM Office about its current equipment records.', 'ra10121']
+  n5: ['Interview the Lipa City DRRM Office about its current equipment records.', 'ra10121'],
+  ...CATALOG_VERIFY
 };
 
 export const THESIS_TRACK = ['r2', 'r3', 'r4', 'd14', 'd22', 'd24', 'd25', 'd26', 'd28'];

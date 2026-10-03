@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, DEFAULT_PROPOSALS, TARGET_DATE, selectProposals, assessmentProgress, validateDraftBatch} from '../public/static/model.js';
-import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, BUILD_WEEKS, hardwareShare, ratioLabel, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from '../public/static/titles.js';
+import {normalizeTitle} from '../public/static/model.js';
+import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, BUILD_WEEKS, THEMES, PRIOR_WORK, themeOf, rankTitles, rankScore, hardwareShare, ratioLabel, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from '../public/static/titles.js';
 import {LEGAL_SOURCES, LEGAL_BASIS, VERIFY, THESIS_TRACK, COUNSEL_REVIEW, COUNSEL_VERDICTS} from '../public/static/legal.js';
 const base = 'http://localhost:3000';
 let count = 0;
@@ -108,6 +109,20 @@ await test('Legal basis, verify actions and counsel review reference real titles
   assert.match(LEGAL_SOURCES.lgc.supports, /458\(a\)\(3\)\(vi\)/);
   assert.ok(COUNSEL_REVIEW.some(c => c.verdict === 'corrected' && /Sec\. 21\(b\)/.test(c.finding)));
   for (const r of [...TITLE_REVIEWS, ...SUGGESTED_TITLES].filter(r => r.verdict === 'recommended')) assert.ok(LEGAL_BASIS[r.key], `recommended ${r.key} lacks legal basis`);
+});
+await test('Top 100 catalog: unique titles, themes, prior-work counts, legal basis and stable rank', () => {
+  const all = [...TITLE_REVIEWS, ...SUGGESTED_TITLES];
+  assert.equal(all.length, 100); assert.equal(SUGGESTED_TITLES.length, 57);
+  assert.equal(new Set(all.map(r => normalizeTitle(r.revised || r.original))).size, 100);
+  for (const r of all) assert.ok(THEMES[themeOf(r)], r.key);
+  for (const r of SUGGESTED_TITLES.filter(r => r.key.startsWith('c'))) { assert.ok(r.angle && r.angle.length > 20, r.key); assert.ok(PRIOR_WORK[r.key] && Number.isInteger(PRIOR_WORK[r.key][1]), r.key); assert.ok(LEGAL_BASIS[r.key], r.key); assert.ok(r.revised.length <= 240, r.key); }
+  const ranks = rankTitles(all); assert.deepEqual(ranks.map(x => x.rank), all.map((_, i) => i + 1));
+  for (let i = 1; i < ranks.length; i++) assert.ok(ranks[i - 1].score >= ranks[i].score);
+  assert.equal(rankScore({verdict: 'recommended', fit: 'strong', effort: [8, 8], unverified: ''}), 9);
+  assert.ok(filterTitles(all, {theme: 'inclusion'}).every(r => themeOf(r) === 'inclusion'));
+  assert.ok(filterTitles(all, {search: 'sign language'}).some(r => r.key === 'c30'));
+  const sum = portfolioSummary(all); assert.equal(sum.total, 100); assert.equal(sum.hardwareTitles, 37);
+  assert.match(titleToProposal(all.find(r => r.key === 'c15'), 'custom-c15').note, /^Angle: /);
 });
 let cookie, initial;
 const get = async () => (await fetch(base+'/api/workspace',{headers:cookie?{Cookie:cookie}:{}})).json();
