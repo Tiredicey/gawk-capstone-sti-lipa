@@ -1,8 +1,14 @@
 import {normalizeTitle} from './model.js';
 import {CATALOG_SOURCES, CATALOG_TITLES, PRIOR_WORK, THEMES, themeOf} from './catalog.js';
 import {LEGAL_SOURCES} from './legal.js';
+import {OCT4_TITLES, OCT4_SOURCES, OCT4_THEMES, OCT4_PRIOR, OCT4_GRADUATE, OCT4_CHECKED_ON} from './catalog-oct4.js';
 
-export {THEMES, PRIOR_WORK, themeOf};
+const ALL_THEMES = {...THEMES, ...OCT4_THEMES};
+export {ALL_THEMES as THEMES, PRIOR_WORK, themeOf};
+export const NEW_TITLES = OCT4_TITLES;
+export const NEW_PRIOR = OCT4_PRIOR;
+export const GRADUATE_PATH = OCT4_GRADUATE;
+export const NEW_CHECKED_ON = OCT4_CHECKED_ON;
 
 export const REVIEWED_ON = '2026-10-01';
 
@@ -44,7 +50,7 @@ const BASE_SOURCES = {
 };
 
 const {ntcSrd, ntcRfid, ra10121, ra9520} = LEGAL_SOURCES;
-export const SOURCES = {...BASE_SOURCES, ...CATALOG_SOURCES, ntcSrd, ntcRfid, ra10121, ra9520};
+export const SOURCES = {...BASE_SOURCES, ...CATALOG_SOURCES, ...OCT4_SOURCES, ntcSrd, ntcRfid, ra10121, ra9520};
 
 export const VERDICTS = {recommended: 'Recommended', revise: 'Revise before proposing', merge: 'Merge into another title', park: 'Park for now'};
 export const FITS = {strong: 'Strong SDG 17 fit', moderate: 'Moderate SDG 17 fit', weak: 'Weak SDG 17 fit'};
@@ -212,7 +218,7 @@ export function filterTitles(list, {search = '', verdict = 'all', fit = 'all', k
     && (fit === 'all' || r.fit === fit)
     && (theme === 'all' || themeOf(r) === theme)
     && (kind === 'all' || (kind === 'hardware' ? r.effort[0] > 0 : r.effort[0] === 0))
-    && (!query || normalizeTitle([r.original, r.revised, r.why, r.scope, r.risks, r.angle || '', THEMES[themeOf(r)], r.targets.join(' ')].join(' ')).includes(query)));
+    && (!query || normalizeTitle([r.original, r.revised, r.why, r.scope, r.risks, r.angle || '', ALL_THEMES[themeOf(r)], r.graduate || '', r.targets.join(' ')].join(' ')).includes(query)));
 }
 
 const VERDICT_POINTS = {recommended: 4, revise: 2, merge: 0, park: 0};
@@ -236,6 +242,6 @@ export function titleToProposal(r, id) {
     title: r.revised,
     domain: `SDG 17 · ${r.targets.join(', ')}`,
     desc: `${r.why}\n\nScope: ${r.scope}\n\nHardware : software effort ${ratioLabel(r.effort)} (estimated ${r.effort[0]} of ${BUILD_WEEKS} build weeks on hardware, ${r.effort[1]} on software).`,
-    note: `${r.angle ? `Angle: ${r.angle}\n` : ''}Risks: ${r.risks}${r.unverified ? `\nNot confirmed: ${r.unverified}` : ''}\nSources: ${sourceList}`.slice(0, 2000)
+    note: `${r.angle ? `Angle: ${r.angle}\n` : ''}${r.graduate ? `Graduate path: ${r.graduate}\n` : ''}Risks: ${r.risks}${r.unverified ? `\nNot confirmed: ${r.unverified}` : ''}\nSources: ${sourceList}`.slice(0, 2000)
   };
 }

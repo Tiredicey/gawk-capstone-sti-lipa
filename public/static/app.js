@@ -1,5 +1,5 @@
 import {LEGAL_SOURCES, LEGAL_BASIS, VERIFY, THESIS_TRACK, COUNSEL_REVIEW, COUNSEL_VERDICTS, LEGAL_CHECKED_ON, REVIEW_FINDINGS, REVIEW_VERDICTS, AUDIT_SUMMARY, DPA_FRAMING} from './legal.js';
-import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, VERDICTS, FITS, REVIEWED_ON, THEMES, PRIOR_WORK, themeOf, rankTitles, ratioLabel, hardwareShare, projectType, displayTitle, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from './titles.js';
+import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, VERDICTS, FITS, REVIEWED_ON, THEMES, PRIOR_WORK, NEW_TITLES, NEW_PRIOR, NEW_CHECKED_ON, themeOf, rankTitles, ratioLabel, hardwareShare, projectType, displayTitle, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from './titles.js';
 import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, selectProposals, assessmentProgress, normalizeTitle} from './model.js';
 
 const $ = id => document.getElementById(id);
@@ -130,14 +130,17 @@ $('draftList').addEventListener('click', event => {
 $('addAllDrafts').onclick = () => addDrafts(drafts);
 $('refreshDrafts').onclick = loadDrafts;
 document.addEventListener('visibilitychange', () => { if (!document.hidden && draftsLoaded) loadDrafts(); });
-const allTitles = () => [...TITLE_REVIEWS, ...SUGGESTED_TITLES];
-const RANKS = new Map(rankTitles(allTitles()).map(x => [x.key, x.rank]));
+const topTitles = () => [...TITLE_REVIEWS, ...SUGGESTED_TITLES];
+const allTitles = () => [...TITLE_REVIEWS, ...SUGGESTED_TITLES, ...NEW_TITLES];
+const RANKS = new Map([...rankTitles(topTitles()), ...rankTitles(NEW_TITLES).map(x => ({...x, rank: x.rank + 100}))].map(x => [x.key, x.rank]));
 const SUGGEST_PAGE = 12;
-let suggestShown = SUGGEST_PAGE;
+let suggestShown = SUGGEST_PAGE, newShown = SUGGEST_PAGE;
 const byRank = list => [...list].sort((a, b) => RANKS.get(a.key) - RANKS.get(b.key));
 const anySource = k => LEGAL_SOURCES[k] || SOURCES[k];
 const sourceLink = k => anySource(k) ? `<a href="${anySource(k).url}" target="_blank" rel="noopener noreferrer">${escape(anySource(k).label)} ↗</a>` : '';
-const priorBlock = r => PRIOR_WORK[r.key] ? `<dt>Prior work</dt><dd>${PRIOR_WORK[r.key][1].toLocaleString('en-US')} OpenAlex works match “${escape(PRIOR_WORK[r.key][0])}” in title or abstract. Read the closest ones before claiming novelty. ${sourceLink('openalexApi')}</dd>` : '';
+const newPrior = r => `<dt>Prior work</dt><dd>${Number.isInteger(NEW_PRIOR[r.key][1]) ? `${NEW_PRIOR[r.key][1].toLocaleString('en-US')} OpenAlex works match` : 'Not counted yet: the OpenAlex free daily budget ran out on 2026-10-04. Search'} \u201c${escape(NEW_PRIOR[r.key][0])}\u201d in titles and abstracts before claiming novelty. ${sourceLink('openalexOct4')}</dd>`;
+const gradBlock = r => r.graduate ? `<dt>Graduate path</dt><dd class="graduate-path">${escape(r.graduate)}<span class="muted">Our judgement of a Master\u2019s or doctoral research question, not a degree requirement.</span></dd>` : '';
+const priorBlock = r => NEW_PRIOR[r.key] ? newPrior(r) : PRIOR_WORK[r.key] ? `<dt>Prior work</dt><dd>${PRIOR_WORK[r.key][1].toLocaleString('en-US')} OpenAlex works match “${escape(PRIOR_WORK[r.key][0])}” in title or abstract. Read the closest ones before claiming novelty. ${sourceLink('openalexApi')}</dd>` : '';
 const TIER_LABELS = {primary: 'Primary anchor', hardware: 'Hardware compliance', institutional: 'Institutional basis'};
 const basisRows = r => LEGAL_BASIS[r.key] || (r.mergeInto && LEGAL_BASIS[r.mergeInto]) || [];
 const legalItem = ([cite, why, k, tier = 'primary']) => `<li data-tier="${tier}"><span class="basis-tier">${TIER_LABELS[tier]}</span><strong>${escape(cite)}</strong> ${escape(why)}${anySource(k) ? ` <a href="${anySource(k).url}" target="_blank" rel="noopener noreferrer" aria-label="Source for ${escape(cite)}">↗</a>` : ''}</li>`;
@@ -149,7 +152,7 @@ const titleOnBoard = r => allProposals().some(p => normalizeTitle(p.title) === n
 const titleById = key => allTitles().find(r => r.key === key);
 const verdictOrder = {recommended: 0, revise: 1, merge: 2, park: 3};
 const byVerdict = list => list.map((r, i) => [r, i]).sort((a, b) => verdictOrder[a[0].verdict] - verdictOrder[b[0].verdict] || a[1] - b[1]).map(([r]) => r);
-const titleBadges = r => `<div class="title-head"><span class="rank" title="Position in the Top 100 order">#${RANKS.get(r.key)}</span><span class="verdict verdict-${r.verdict}">${escape(VERDICTS[r.verdict])}</span><span class="fit fit-${r.fit}">${escape(FITS[r.fit])}</span>${thesisTag(r)}<span class="theme-chip">${escape(THEMES[themeOf(r)])}</span><span class="targets">${r.targets.map(x => `<abbr title="${escape(SDG17_TARGETS[x])}">${x}</abbr>`).join('')}</span></div>`;
+const titleBadges = r => `<div class="title-head"><span class="rank" title="${r.added ? 'Position among the 100 titles added on October 4' : 'Position in the Top 100 order'}">#${RANKS.get(r.key)}</span>${r.added ? '<span class="new-tag">New</span>' : ''}<span class="verdict verdict-${r.verdict}">${escape(VERDICTS[r.verdict])}</span><span class="fit fit-${r.fit}">${escape(FITS[r.fit])}</span>${thesisTag(r)}<span class="theme-chip">${escape(THEMES[themeOf(r)])}</span><span class="targets">${r.targets.map(x => `<abbr title="${escape(SDG17_TARGETS[x])}">${x}</abbr>`).join('')}</span></div>`;
 function compactTitleCard(r) {
   const target = r.mergeInto && titleById(r.mergeInto);
   const next = target ? `<a class="compact-link" href="#title-${target.key}">Merges into: ${escape(displayTitle(target))} ↓</a>` : r.revised ? `<p class="compact-why">If revived: ${escape(r.revised)}</p>` : '';
@@ -158,19 +161,25 @@ function compactTitleCard(r) {
 function titleCard(r) {
   if (isSettled(r)) return compactTitleCard(r);
   const added = titleOnBoard(r), hw = hardwareShare(r.effort);
-  return `<li id="title-${r.key}" class="title-item" data-verdict="${r.verdict}" tabindex="-1">${titleBadges(r)}${r.original ? `<p class="title-original"><span>Original</span>${escape(r.original)}</p>` : ''}<h3 class="title-revised">${escape(r.revised)}</h3><div class="ratio" role="img" aria-label="Estimated hardware ${hw} percent, software ${100 - hw} percent"><span class="ratio-hw" data-hw="${hw}"></span></div><p class="ratio-label"><strong>Hardware : software ${ratioLabel(r.effort)}</strong> · ${projectType(r.effort)} · estimate</p>${r.unverified ? '<p class="unverified-flag">Has unconfirmed points</p>' : ''}<details class="title-details"><summary>SDG 17 link, scope, risks and sources</summary><dl class="title-facts"><dt>SDG 17 link</dt><dd>${escape(r.why)}</dd><dt>Scope</dt><dd>${escape(r.scope)}</dd>${r.angle ? `<dt>Angle</dt><dd>${escape(r.angle)}</dd>` : ''}${priorBlock(r)}<dt>Risks</dt><dd>${escape(r.risks)}</dd>${legalBlock(r)}${r.unverified ? `<dt>Not confirmed</dt><dd class="unverified">${escape(r.unverified)}</dd>` : ''}${verifyBlock(r)}<dt>Sources</dt><dd class="title-cites">${r.sources.map(k => `<a href="${SOURCES[k].url}" target="_blank" rel="noopener noreferrer">${escape(SOURCES[k].label)} ↗</a>`).join('')}</dd></dl></details><div class="title-item-actions"><button class="btn btn-secondary" data-title-add="${r.key}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add revised title to my board'}</button></div></li>`;
+  return `<li id="title-${r.key}" class="title-item" data-verdict="${r.verdict}" tabindex="-1">${titleBadges(r)}${r.original ? `<p class="title-original"><span>Original</span>${escape(r.original)}</p>` : ''}<h3 class="title-revised">${escape(r.revised)}</h3><div class="ratio" role="img" aria-label="Estimated hardware ${hw} percent, software ${100 - hw} percent"><span class="ratio-hw" data-hw="${hw}"></span></div><p class="ratio-label"><strong>Hardware : software ${ratioLabel(r.effort)}</strong> · ${projectType(r.effort)} · estimate</p>${r.unverified ? '<p class="unverified-flag">Has unconfirmed points</p>' : ''}<details class="title-details"><summary>SDG 17 link, scope, risks and sources</summary><dl class="title-facts"><dt>SDG 17 link</dt><dd>${escape(r.why)}</dd><dt>Scope</dt><dd>${escape(r.scope)}</dd>${r.angle ? `<dt>Angle</dt><dd>${escape(r.angle)}</dd>` : ''}${priorBlock(r)}${gradBlock(r)}<dt>Risks</dt><dd>${escape(r.risks)}</dd>${legalBlock(r)}${r.unverified ? `<dt>Not confirmed</dt><dd class="unverified">${escape(r.unverified)}</dd>` : ''}${verifyBlock(r)}<dt>Sources</dt><dd class="title-cites">${r.sources.map(k => `<a href="${SOURCES[k].url}" target="_blank" rel="noopener noreferrer">${escape(SOURCES[k].label)} ↗</a>`).join('')}</dd></dl></details><div class="title-item-actions"><button class="btn btn-secondary" data-title-add="${r.key}" ${added || !ready ? 'disabled' : ''}>${added ? 'On your board ✓' : 'Add revised title to my board'}</button></div></li>`;
 }
 let sourcesRendered = false;
 function renderTitles() {
   const filters = {search: $('titleSearch').value, verdict: $('titleVerdict').value, fit: $('titleFit').value, kind: $('titleKind').value, theme: $('titleTheme').value};
   const order = $('titleOrder').value === 'rank' ? byRank : byVerdict;
-  const shown = order(filterTitles(TITLE_REVIEWS, filters)), suggested = order(filterTitles(SUGGESTED_TITLES, filters)), sum = portfolioSummary(TITLE_REVIEWS), whole = portfolioSummary(allTitles());
+  const shown = order(filterTitles(TITLE_REVIEWS, filters)), suggested = order(filterTitles(SUGGESTED_TITLES, filters)), fresh = order(filterTitles(NEW_TITLES, filters)), sum = portfolioSummary(TITLE_REVIEWS), whole = portfolioSummary(allTitles());
   const main = shown.filter(r => !isSettled(r)), settled = shown.filter(isSettled);
   const pending = allTitles().filter(r => r.verdict === 'recommended' && !titleOnBoard(r));
   $('titleReviewCount').textContent = allTitles().length;
   $('suggestCount').textContent = SUGGESTED_TITLES.length;
-  $('titleReviewStatus').textContent = `${shown.length + suggested.length} of ${TITLE_REVIEWS.length + SUGGESTED_TITLES.length} shown`;
-  $('titlePortfolio').innerHTML = [['Titles in the Top 100', whole.total], ['Recommended overall', whole.recommended], ['With hardware overall', `${whole.hardwareTitles} of ${whole.active}`], ['Titles reviewed', sum.total], ['Recommended', sum.recommended], ['Revise first', sum.revise], ['Merge', sum.merge], ['Park', sum.park], ['With hardware', `${sum.hardwareTitles} of ${sum.active}`], ['Average hardware effort', `${sum.hardwareShare}%`]].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('titleReviewStatus').textContent = `${shown.length + suggested.length + fresh.length} of ${allTitles().length} shown`;
+  const freshVisible = fresh.slice(0, newShown);
+  $('newCount').textContent = NEW_TITLES.length;
+  $('newList').innerHTML = freshVisible.length ? freshVisible.map(titleCard).join('') : '<li class="draft-empty">No October 4 titles match these filters.</li>';
+  $('newMore').hidden = fresh.length <= freshVisible.length;
+  $('newMore').textContent = `Show ${Math.min(SUGGEST_PAGE, fresh.length - freshVisible.length)} more of ${fresh.length - freshVisible.length} remaining`;
+  $('newStatus').textContent = fresh.length ? `Showing ${freshVisible.length} of ${fresh.length}` : '';
+  $('titlePortfolio').innerHTML = [['Titles on this page', whole.total], ['Added October 4', NEW_TITLES.length], ['Recommended overall', whole.recommended], ['With hardware overall', `${whole.hardwareTitles} of ${whole.active}`], ['Titles reviewed', sum.total], ['Recommended', sum.recommended], ['Revise first', sum.revise], ['Merge', sum.merge], ['Park', sum.park], ['With hardware', `${sum.hardwareTitles} of ${sum.active}`], ['Average hardware effort', `${sum.hardwareShare}%`]].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
   $('titleList').innerHTML = main.length ? main.map(titleCard).join('') : `<li class="draft-empty">${settled.length ? 'Only merged or parked titles match. They are listed in the group below.' : 'No reviewed titles match these filters.'}</li>`;
   $('parkedList').innerHTML = settled.map(titleCard).join('');
   $('parkedGroup').hidden = !settled.length;
@@ -190,7 +199,7 @@ function renderTitles() {
     $('reviewSummary').textContent = `${REVIEW_FINDINGS.length} points checked on ${AUDIT_SUMMARY.checkedOn}: ${AUDIT_SUMMARY.sectionsFound} cited sections found in the official text, ${AUDIT_SUMMARY.realErrors} citation errors fixed`;
     $('counselSummary').textContent = `${COUNSEL_REVIEW.length} points checked on ${LEGAL_CHECKED_ON}: ${Object.entries(COUNSEL_VERDICTS).map(([k, label]) => [COUNSEL_REVIEW.filter(c => c.verdict === k).length, label.toLowerCase()]).filter(([n]) => n).map(([n, label]) => `${n} ${label}`).join(', ')}`;
     const everySource = [...new Set([...Object.values(SOURCES), ...Object.values(LEGAL_SOURCES)])];
-    $('titleSources').innerHTML = `<details><summary>All ${everySource.length} sources read on ${REVIEWED_ON} and 2026-10-03</summary><ul>${everySource.map(x => `<li><a href="${x.url}" target="_blank" rel="noopener noreferrer">${escape(x.label)} ↗</a><span>${escape(x.tier)} · ${escape(x.date)}</span><p>${escape(x.supports)}</p></li>`).join('')}</ul></details>`;
+    $('titleSources').innerHTML = `<details><summary>All ${everySource.length} sources read on ${REVIEWED_ON}, 2026-10-03 and ${NEW_CHECKED_ON}</summary><ul>${everySource.map(x => `<li><a href="${x.url}" target="_blank" rel="noopener noreferrer">${escape(x.label)} ↗</a><span>${escape(x.tier)} · ${escape(x.date)}</span><p>${escape(x.supports)}</p></li>`).join('')}</ul></details>`;
     sourcesRendered = true;
   }
 }
@@ -212,9 +221,10 @@ document.addEventListener('click', event => {
 });
 $('addRecommended').onclick = () => addTitles(allTitles().filter(r => r.verdict === 'recommended'));
 $('printTitles').onclick = openTitlePrint;
-const resetTitles = () => { suggestShown = SUGGEST_PAGE; renderTitles(); };
+const resetTitles = () => { suggestShown = SUGGEST_PAGE; newShown = SUGGEST_PAGE; renderTitles(); };
 $('titleSearch').oninput = $('titleVerdict').onchange = $('titleFit').onchange = $('titleKind').onchange = $('titleTheme').onchange = $('titleOrder').onchange = resetTitles;
 $('titleTheme').innerHTML = `<option value="all">All themes</option>${Object.entries(THEMES).map(([k, v]) => `<option value="${k}">${escape(v)} (${allTitles().filter(r => themeOf(r) === k).length})</option>`).join('')}`;
+$('newMore').onclick = () => { const first = newShown; newShown += SUGGEST_PAGE; renderTitles(); $('newList').children[first]?.focus(); };
 $('suggestMore').onclick = () => { const first = suggestShown; suggestShown += SUGGEST_PAGE; renderTitles(); $('suggestList').children[first]?.focus(); };
 function openDialog(title, body, className = '') {
   returnFocus = document.activeElement; editDirty = false;

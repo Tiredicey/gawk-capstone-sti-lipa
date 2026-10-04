@@ -1,4 +1,5 @@
 import {CATALOG_LEGAL, CATALOG_VERIFY} from './catalog.js';
+import {OCT4_LEGAL, OCT4_VERIFY} from './catalog-oct4.js';
 import {CITATION_SOURCES, CORRECTED_LEGAL, REVIEW_FINDINGS, REVIEW_VERDICTS, AUDIT_SUMMARY, DPA_FRAMING, CITATIONS_CHECKED_ON} from './citations.js';
 
 export {REVIEW_FINDINGS, REVIEW_VERDICTS, AUDIT_SUMMARY, DPA_FRAMING, CITATIONS_CHECKED_ON};
@@ -48,7 +49,8 @@ export const LEGAL_BASIS = {
   n5: [['R.A. 10121 Sec. 12(c)(12)', 'The LDRRMO must keep a database of human resource and equipment', 'ra10121'], ['NTC MC 03-08-2006', 'RFID at 918 to 920 MHz; readers need type approval and registration', 'ntcRfid']],
   n6: [['NTC MC 002-09-2025 (secondary summary)', 'Use LTE, not 2G or 3G modules', 'ntc']],
   ...CATALOG_LEGAL,
-  ...CORRECTED_LEGAL
+  ...CORRECTED_LEGAL,
+  ...OCT4_LEGAL
 };
 
 export const VERIFY = {
@@ -64,7 +66,8 @@ export const VERIFY = {
   d34: ['Ask the STI College Lipa IT office which learning management system it runs.', ''],
   n4: ['Same as the air quality title: confirm a reference monitor with EMB CALABARZON.', 'embR4a'],
   n5: ['Interview the Lipa City DRRM Office about its current equipment records.', 'ra10121'],
-  ...CATALOG_VERIFY
+  ...CATALOG_VERIFY,
+  ...OCT4_VERIFY
 };
 
 export const THESIS_TRACK = ['r2', 'r3', 'r4', 'd14', 'd22', 'd24', 'd25', 'd26', 'd28'];
