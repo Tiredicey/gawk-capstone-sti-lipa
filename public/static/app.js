@@ -1,5 +1,6 @@
 import {LEGAL_SOURCES, LEGAL_BASIS, VERIFY, THESIS_TRACK, COUNSEL_REVIEW, COUNSEL_VERDICTS, LEGAL_CHECKED_ON, REVIEW_FINDINGS, REVIEW_VERDICTS, AUDIT_SUMMARY, DPA_FRAMING} from './legal.js';
 import {TITLE_REVIEWS, SUGGESTED_TITLES, SOURCES, SDG17_TARGETS, VERDICTS, FITS, REVIEWED_ON, THEMES, PRIOR_WORK, themeOf, rankTitles, ratioLabel, hardwareShare, projectType, displayTitle, filterTitles, portfolioSummary, titleToProposal, reviewForTitle} from './titles.js';
+import {LIBRARY_PAGE, filterLibrary, librarySummary, libraryToProposal} from './library.js';
 import {DEFAULT_PROPOSALS, CONCEPTS, CRITERIA, MESSENGER_THREAD_URL, emptyState, validateWorkspace, overallScore, formatNotes, makeBackup, parseBackup, recoverLegacy, selectProposals, assessmentProgress, normalizeTitle} from './model.js';
 
 const $ = id => document.getElementById(id);
@@ -93,6 +94,7 @@ function render() {
   }).join('') : '<section class="empty-state"><h3>No matching ideas</h3><p>Try another keyword or view all ideas.</p><button class="btn btn-secondary" data-action="reset">Clear filters</button></section>';
   if (typeof renderDrafts === 'function' && $('draftList')) renderDrafts();
   if (typeof renderTitles === 'function') renderTitles();
+  if (typeof renderLibrary === 'function') renderLibrary();
   if (focusId && focusAction) [...document.querySelectorAll('[data-action]')].find(el => el.dataset.id === focusId && el.dataset.action === focusAction)?.focus({preventScroll: true});
 }
 let drafts = [], draftsLoaded = false;
@@ -216,6 +218,90 @@ const resetTitles = () => { suggestShown = SUGGEST_PAGE; renderTitles(); };
 $('titleSearch').oninput = $('titleVerdict').onchange = $('titleFit').onchange = $('titleKind').onchange = $('titleTheme').onchange = $('titleOrder').onchange = resetTitles;
 $('titleTheme').innerHTML = `<option value="all">All themes</option>${Object.entries(THEMES).map(([k, v]) => `<option value="${k}">${escape(v)} (${allTitles().filter(r => themeOf(r) === k).length})</option>`).join('')}`;
 $('suggestMore').onclick = () => { const first = suggestShown; suggestShown += SUGGEST_PAGE; renderTitles(); $('suggestList').children[first]?.focus(); };
+let lib = null, libShown = LIBRARY_PAGE, libTarget = 'all', libLoading = null;
+const LIB_SELECTS = ['libraryTheme', 'libraryTrack', 'libraryVerdict', 'libraryFit', 'libraryKind', 'libraryChanged'];
+const libFilters = () => ({search: $('librarySearch').value, theme: $('libraryTheme').value, track: $('libraryTrack').value, verdict: $('libraryVerdict').value, fit: $('libraryFit').value, kind: $('libraryKind').value, changed: $('libraryChanged').value, target: libTarget});
+const libOnBoard = r => allProposals().some(p => normalizeTitle(p.title) === normalizeTitle(r.title.slice(0, 240)));
+const libCite = c => `<li data-tier="primary"><span class="basis-tier">Primary anchor</span><strong>${escape(c[0])}</strong> <span class="lib-act">${escape(c[1])}</span><blockquote class="lib-quote">…${escape(c[3])}…</blockquote><a href="${escape(c[2])}" target="_blank" rel="noopener noreferrer" aria-label="Open ${escape(c[0])} on Lawphil">Lawphil ↗</a></li>`;
+function libraryCard(r) {
+  const office = lib.LIBRARY_OFFICES[r.office] || r.office, added = libOnBoard(r), merged = r.verdict === 'merge';
+  const basis = r.cites.length ? r.cites.map(libCite).join('') : `<li data-tier="institutional"><span class="basis-tier">Institutional basis</span><strong>No statute cited</strong> ${escape(r.notes[0] || '')}</li>`;
+  const notes = r.institutional ? r.notes.slice(1) : r.notes;
+  const label = added ? 'On your board ✓' : merged ? 'Use the merged title' : 'Add to my board';
+  return `<li id="lib-${r.n}" class="title-item library-item" data-verdict="${r.verdict}" tabindex="-1"><div class="title-head"><span class="rank" title="Library number">No. ${r.n}</span><span class="verdict verdict-${r.verdict}">${escape(merged ? 'Merged' : VERDICTS[r.verdict])}</span><span class="fit fit-${r.fit}">${escape(FITS[r.fit])}</span><span class="track-chip track-${r.track}">${escape(lib.LIBRARY_TRACKS[r.track])}</span>${r.check ? '<span class="changed-chip" title="Changed after checking counsel’s notes">Counsel fix</span>' : ''}<span class="theme-chip">${escape(lib.LIBRARY_THEMES[r.theme])}</span><span class="targets">${r.targets.map(x => `<abbr title="${escape(SDG17_TARGETS[x])}">${x}</abbr>`).join('')}</span></div><h3 class="title-revised">${escape(r.title)}</h3><p class="lib-meta"><span>Partner: ${escape(office)}</span><span>${r.hw ? 'Has hardware' : 'Software only'}</span></p>${merged ? `<p class="compact-why"><a class="compact-link" href="#lib-${r.mergeInto}">Merged into No. ${r.mergeInto} ↓</a></p>` : ''}${r.open ? `<p class="unverified-flag">${escape(r.open)}</p>` : ''}<details class="title-details"><summary>SDG 17 link, legal basis and matched text</summary><dl class="title-facts"><dt>SDG 17 link</dt><dd>${escape(r.why)}</dd>${r.scope ? `<dt>BSIT scope</dt><dd>${escape(r.scope)}</dd>` : ''}<dt>Legal basis</dt><dd><ul class="legal-basis">${basis}</ul>${r.cites.some(c => /10173/.test(c[0])) ? `<p class="dpa-framing">${escape(DPA_FRAMING)}</p>` : ''}</dd>${notes.length ? `<dt>Also check</dt><dd><ul class="lib-notes">${notes.map(x => `<li>${escape(x)}</li>`).join('')}</ul></dd>` : ''}${r.similar ? `<dt>Closest site title</dt><dd>${escape(r.similar)}</dd>` : ''}</dl></details><div class="title-item-actions"><button class="btn btn-secondary" data-lib-add="${r.n}" ${added || !ready || merged ? 'disabled' : ''}>${label}</button></div></li>`;
+}
+function renderLibrary() {
+  if (!lib) return;
+  const shown = filterLibrary(lib.LIBRARY, libFilters()), visible = shown.slice(0, libShown);
+  $('libraryStatus').textContent = `${shown.length} of ${lib.LIBRARY.length} shown`;
+  $('libraryList').innerHTML = visible.length ? visible.map(libraryCard).join('') : '<li class="draft-empty">No library titles match these filters.</li>';
+  $('libraryMore').hidden = shown.length <= visible.length;
+  $('libraryMore').textContent = `Show ${Math.min(LIBRARY_PAGE, shown.length - visible.length)} more of ${shown.length - visible.length} remaining`;
+  $('libraryTargets').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.target === libTarget)));
+}
+function setupLibrary(mod) {
+  lib = mod;
+  const sum = librarySummary(lib.LIBRARY);
+  $('libraryPortfolio').innerHTML = [['Titles', sum.total], ['Recommended', sum.recommended], ['Revise first', sum.revise], ['Strong SDG 17 fit', sum.strong], ['BSIT capstone', sum.bsit], ['Extendable to MSIT', sum.msit], ['MSIT or doctoral', sum.doctoral], ['With hardware', sum.hardware], ['Changed after counsel', sum.changed], ['Laws quoted', sum.laws]].map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('libraryTargets').innerHTML = `<button data-target="all" class="target-chip">All targets</button>${Object.keys(SDG17_TARGETS).sort((a, b) => Number(a.slice(3)) - Number(b.slice(3))).map(t => `<button data-target="${t}" class="target-chip" title="${escape(SDG17_TARGETS[t])}">${t} <span>${sum.targets[t] || 0}</span></button>`).join('')}`;
+  $('libraryTheme').innerHTML = `<option value="all">All themes</option>${Object.entries(lib.LIBRARY_THEMES).map(([k, v]) => `<option value="${k}">${escape(v)} (${lib.LIBRARY.filter(r => r.theme === k).length})</option>`).join('')}`;
+  const tone = {accepted: 'right', rejected: 'wrong', partly: 'ours'};
+  $('attorneyList').innerHTML = lib.ATTORNEY_REVIEW.map(c => `<li class="counsel-item" data-verdict="${tone[c.verdict]}"><div class="counsel-head"><h4>${escape(c.item)}</h4><span class="counsel-verdict">${escape(lib.ATTORNEY_VERDICTS[c.verdict])}</span></div><p>${escape(c.finding)}</p><p class="counsel-action"><strong>Action.</strong> ${escape(c.action)}</p></li>`).join('');
+  $('attorneySummary').textContent = `${lib.ATTORNEY_REVIEW.length} points: ${Object.entries(lib.ATTORNEY_VERDICTS).map(([k, label]) => `${lib.ATTORNEY_REVIEW.filter(c => c.verdict === k).length} ${label.toLowerCase()}`).join(', ')}`;
+  $('libraryGate').hidden = true; $('libraryBody').hidden = false;
+  renderLibrary();
+}
+function loadLibrary() {
+  if (!libLoading) {
+    $('libraryLoad').disabled = true; $('libraryLoad').textContent = 'Loading the library…';
+    libLoading = import('./library-data.js').then(setupLibrary).catch(() => {
+      libLoading = null; $('libraryLoad').disabled = false; $('libraryLoad').textContent = 'Retry loading the library';
+      $('libraryStatus').textContent = 'The library could not load. Check your connection.';
+    });
+  }
+  return libLoading;
+}
+const csvCell = v => `"${String(v).replace(/"/g, '""')}"`;
+function libraryCsv() {
+  const rows = filterLibrary(lib.LIBRARY, libFilters());
+  const head = ['No', 'Title', 'Theme', 'Track', 'Verdict', 'SDG 17 fit', 'SDG 17 targets', 'Partner', 'Hardware', 'Legal basis', 'Matched text', 'Source', 'Open point', 'BSIT scope', 'Notes'];
+  const body = rows.map(r => [r.n, r.title, lib.LIBRARY_THEMES[r.theme], lib.LIBRARY_TRACKS[r.track], r.verdict, r.fit, r.targets.join(' '), lib.LIBRARY_OFFICES[r.office] || r.office, r.hw ? 'Yes' : 'No', r.cites.map(c => c[0]).join('; ') || 'Institutional', r.cites.map(c => c[3]).join(' | '), [...new Set(r.cites.map(c => c[2]))].join(' '), r.open, r.scope, r.notes.join(' ')].map(csvCell).join(','));
+  const url = URL.createObjectURL(new Blob(['\ufeff' + [head.map(csvCell).join(','), ...body].join('\r\n')], {type: 'text/csv;charset=utf-8'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = `capstone-library-${rows.length}.csv`; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  notify(`${rows.length} titles exported as CSV.`);
+}
+function libraryPrint() {
+  const rows = filterLibrary(lib.LIBRARY, libFilters());
+  openDialog(`Capstone library · ${rows.length} titles · SDG 17`, `<p>Checked against Lawphil on ${lib.LIBRARY_CHECKED_ON}. Partners are proposed, not confirmed. Research support, not legal advice.</p><div class="comparison-scroll" tabindex="0" role="region" aria-label="Library table"><table class="comparison"><thead><tr><th scope="col">No.</th><th scope="col">Title</th><th scope="col">Track</th><th scope="col">Verdict</th><th scope="col">SDG 17</th><th scope="col">Partner</th><th scope="col">Legal basis</th><th scope="col">Open point</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.n}</td><th scope="row">${escape(r.title)}</th><td>${escape(lib.LIBRARY_TRACKS[r.track])}</td><td>${escape(r.verdict)}</td><td>${r.targets.join(', ')}</td><td>${escape(lib.LIBRARY_OFFICES[r.office] || r.office)}</td><td>${escape(r.cites.map(c => c[0]).join('; ') || 'Institutional')}</td><td>${escape(r.open || r.scope || 'None noted')}</td></tr>`).join('')}</tbody></table></div><div class="actions"><button id="printLibraryTable" class="btn">Print</button><button id="doneLibraryPrint" class="btn btn-secondary">Done</button></div>`, 'comparison-dialog');
+  $('printLibraryTable').onclick = () => window.print(); $('doneLibraryPrint').onclick = closeDialog;
+}
+const resetLibrary = () => { libShown = LIBRARY_PAGE; renderLibrary(); };
+const clearLibrary = () => { $('librarySearch').value = ''; LIB_SELECTS.forEach(id => { $(id).value = 'all'; }); libTarget = 'all'; };
+$('libraryLoad').onclick = loadLibrary;
+$('librarySearch').oninput = resetLibrary;
+LIB_SELECTS.forEach(id => { $(id).onchange = resetLibrary; });
+$('libraryTargets').onclick = event => { const b = event.target.closest('button[data-target]'); if (b) { libTarget = b.dataset.target; resetLibrary(); } };
+$('libraryReset').onclick = () => { clearLibrary(); resetLibrary(); };
+$('libraryMore').onclick = () => { const first = libShown; libShown += LIBRARY_PAGE; renderLibrary(); $('libraryList').children[first]?.focus(); };
+$('libraryCsv').onclick = libraryCsv;
+$('libraryPrint').onclick = libraryPrint;
+$('libraryList').addEventListener('click', event => {
+  const jump = event.target.closest('a[href^="#lib-"]');
+  if (jump) {
+    const n = Number(jump.getAttribute('href').slice(5));
+    if (!document.getElementById(`lib-${n}`)) { event.preventDefault(); clearLibrary(); libShown = Math.ceil(n / LIBRARY_PAGE) * LIBRARY_PAGE; renderLibrary(); document.getElementById(`lib-${n}`)?.focus(); }
+  }
+  const button = event.target.closest('button[data-lib-add]');
+  if (!button) return;
+  const r = lib.LIBRARY.find(x => x.n === Number(button.dataset.libAdd));
+  if (!r || libOnBoard(r)) return;
+  if (state.custom.length >= 100) { notify('Your board already holds 100 custom proposals.'); return; }
+  if (mutate(next => { next.custom.push(libraryToProposal(r, lib.LIBRARY_OFFICES, `custom-${crypto.randomUUID()}`)); })) notify(`Library title No. ${r.n} added to your board. Check the save status for D1 confirmation.`);
+});
+if ('IntersectionObserver' in window) { const watch = new IntersectionObserver(entries => { if (entries[0].isIntersecting) { watch.disconnect(); loadLibrary(); } }, {rootMargin: '400px'}); watch.observe($('library')); }
+if (location.hash.startsWith('#lib')) loadLibrary();
 function openDialog(title, body, className = '') {
   returnFocus = document.activeElement; editDirty = false;
   $('dialog').className = className;
