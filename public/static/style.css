@@ -47,3 +47,4 @@ dialog{border:1px solid var(--border);border-radius:18px;background:var(--surfac
 .library-pager{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
 @media(max-width:860px){.library-portfolio{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.target-chip,.library-item{transition:none}}
+.library-toolbar .search-label{flex:1 1 100%}.library-toolbar label:not(.search-label){flex:1 1 180px}.library-toolbar label:not(.search-label) select{width:100%}

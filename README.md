@@ -90,6 +90,63 @@ Counsel's notes were checked against primary text on October 1, 2026. Data lives
 
 This is research support, not legal advice.
 
+## 513-title research library (added October 13, 2026)
+Section `#library` holds 513 more capstone titles. None of them is on the site already. Each was compared with the 136 titles here using token overlap, and 6 near-duplicates were dropped before the list was made. Every title names:
+
+- a proposed Lipa partner office;
+- a track: BSIT capstone (255), BSIT extendable to MSIT (142), or research-heavy for MSIT or doctoral work (116);
+- SDG 17 targets: 17.8 on every title, plus up to two of 17.6, 17.7, 17.9, 17.11, 17.14, 17.16, 17.17, 17.18 and 17.19, with a strong, moderate or weak fit;
+- the cited section, with the matched text quoted from Lawphil and a link to it.
+
+The rules for assigning targets are printed on the page.
+
+Totals: 442 recommended, 70 to revise first, 1 merged. 257 have a strong SDG 17 fit and 90 involve hardware. The citations draw on 137 laws, 143 source texts in all, re-opened on Lawphil on 2026-10-13. A build script checked every cited section and keyword against those texts, so a title cannot ship if its section is missing or the keyword is not in it.
+
+The library loads on demand as `/static/library-data.js` (about 450 KB) when the section scrolls into view. Controls:
+
+- search, plus filters for theme, track, verdict, fit, hardware and counsel change, and SDG 17 target chips;
+- 20 cards per page;
+- add to board, which copies the basis, partner and sources into a custom proposal;
+- print the filtered list;
+- download the filtered list as CSV.
+
+### Counsel's notes on all 513, checked against the text
+Counsel's notes describe themselves as AI-assisted, so we tested every point against the enrolled text. The 25 points are listed on the page under "Counsel's notes on all 513". 87 titles changed.
+
+Points where the law text did not support counsel:
+- R.A. 10121 Sec. 12(c)(5) and (c)(23) are real. 12(c) has 25 numbered items.
+- Sec. 12 is the LDRRMO; Sec. 11 is the council.
+- R.A. 8435 Sec. 41 is the National Information Network.
+- R.A. 9710 Sec. 13 is the education provision.
+- Counsel's own note that DPA Sec. 20 is the Data Privacy Officer is wrong; Sec. 20 is Security of Personal Information.
+
+Points where counsel was partly right:
+- R.A. 11032 amends and renames R.A. 9485. It does not repeal it. The Citizens Charter stays Sec. 6, and the Report Card Survey moved from Sec. 10 to Sec. 20. All 12 affected titles now cite "R.A. 9485 as amended by R.A. 11032".
+- R.A. 11313 does not repeal R.A. 7877, so title 253 cites both.
+- R.A. 9710 Sec. 33 exists, and R.A. 9994 was added beside it.
+
+Points accepted and fixed:
+- Bare R.A. 7160 Sec. 458 cites now name the exact paragraph, such as 458(a)(5)(vi) for traffic, and add R.A. 4136 or Sec. 59 where they fit.
+- Garbled amendment captions were rewritten.
+- R.A. 10152 now cites Secs. 3 and 4.
+- Localization (title 464) is re-anchored from R.A. 7277 Sec. 22 to Constitution Art. XIV Sec. 6 and R.A. 7104.
+- Barangay clearance and building permit titles cite R.A. 7160 Secs. 152(c) and 477.
+- A right-to-information basis was added.
+- 7 partner offices were corrected.
+- A DPA Sec. 11 or 13 anchor was added to 35 titles.
+- 32 institutional-only titles were labelled.
+- 18 research-heavy titles got a BSIT scope cut.
+- Weak bases are marked "policy support only".
+- Duplicates were merged or retitled.
+- Regulatory pointers were added for NTC, CAAP, DepEd, PAGASA/DOLE, PDNA, DOH, WHO and NPC.
+
+### Not confirmed
+- P.D. 1096 (Lawphil returned 404).
+- The NTC, CAAP, DepEd, PAGASA, DOH, WHO and NPC rules. They are listed as pointers but were not opened.
+- Whether OSCA, PESO, the tourism unit and the Youth Development Office exist in Lipa. They are not on lipa.gov.ph, so they carry fallbacks.
+- Whether any title is novel in the literature. OpenAlex timed out, so prior-work counts exist only for the Top 100.
+- No partner office has agreed to anything.
+
 ## Group chat drafts from Heisenbot
 [Heisenbot](https://github.com/Tiredicey/Heisenbot) watches the Messenger group chat. When a member sends a capstone title, it posts the title here. The **Group chat drafts** section lists every posted title with its sender and time. Anyone who opens the site sees the same list. **Add to my board** or **Add all new to my board** copies titles into your own workspace, where you can edit, shortlist and score them.
 
@@ -106,7 +163,7 @@ This is research support, not legal advice.
 If the token is not set, `/api/intake` answers 503 and nothing can be posted.
 
 ## Routes and storage
-`GET /` (includes `#title-review`), `GET /api/workspace`, `PUT /api/workspace`, `GET /api/drafts`, `GET|POST /api/intake`, `DELETE /api/intake/:id`, `GET /api/health`, `/static/*`.
+`GET /` (includes `#title-review` and `#library`), `GET /api/workspace`, `PUT /api/workspace`, `GET /api/drafts`, `GET|POST /api/intake`, `DELETE /api/intake/:id`, `GET /api/health`, `/static/*`.
 
 `POST /api/intake` takes `{"drafts":[{"title","domain?","summary?","author?","source?"}]}` with up to 50 drafts and `Authorization: Bearer <INTAKE_TOKEN>`. It answers `{added:[titles], skipped:[{title, reason}]}`. D1 table `drafts` stores the title, a normalized unique key, domain, summary, author, source, time and a hidden flag.
 
@@ -123,7 +180,7 @@ pm2 start ecosystem.config.cjs
 npm test
 ```
 
-Put `INTAKE_TOKEN=<any 24+ characters>` in `.dev.vars` for local intake tests. Startup applies local D1 migrations and serves port 3000. Tests cover model/API validation, persistence, cookie isolation, conflicts, backups, XSS escaping, editing/cancellation, sorting, progress, media playback/failures, reduced motion, keyboard focus, axe checks and viewport overflow. Screenshots, comparison PDF and results regenerate under ignored `test-results/`.
+Put `INTAKE_TOKEN=<any 24+ characters>` in `.dev.vars` for local intake tests. Startup applies local D1 migrations and serves port 3000. Tests cover the 513-title library (uniqueness against the site, SDG 17 codes, Lawphil URLs, caption and amendment checks, DPA anchors, proposal limits, lazy loading, filters, paging, CSV, print and add-once), model/API validation, persistence, cookie isolation, conflicts, backups, XSS escaping, editing/cancellation, sorting, progress, media playback/failures, reduced motion, keyboard focus, axe checks and viewport overflow. Screenshots, comparison PDF and results regenerate under ignored `test-results/`.
 
 These checks are not security or accessibility certification. Physical devices, screen readers, other browsers and production load remain unverified. Share/clipboard tests inject outcomes, not actual message delivery. PDF tests verify output creation, not every printed layout.
 
