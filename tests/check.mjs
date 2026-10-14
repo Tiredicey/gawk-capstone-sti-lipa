@@ -146,11 +146,11 @@ await test('Second review: every active title has a cited non-hardware anchor wi
   assert.equal(AUDIT_SUMMARY.realErrors, REVIEW_FINDINGS.filter(c => c.verdict === 'ours').length);
   assert.ok(!/\u2014/.test(JSON.stringify({LEGAL_BASIS, REVIEW_FINDINGS})));
 });
-await test('513-title library: unique, new to the site, SDG 17 mapped, cited with Lawphil text, counsel fixes applied', () => {
-  assert.equal(LIBRARY.length, 513);
-  assert.deepEqual(LIBRARY.map(r => r.n), Array.from({length: 513}, (_, i) => i + 1));
+await test('663-title library: unique, new to the site, SDG 17 mapped, cited with Lawphil text, counsel fixes applied', () => {
+  assert.equal(LIBRARY.length, 663);
+  assert.deepEqual(LIBRARY.map(r => r.n), Array.from({length: 663}, (_, i) => i + 1));
   const top = new Set([...TITLE_REVIEWS, ...SUGGESTED_TITLES].flatMap(r => [r.original, r.revised]).filter(Boolean).map(normalizeTitle));
-  assert.equal(new Set(LIBRARY.map(r => normalizeTitle(r.title))).size, 513);
+  assert.equal(new Set(LIBRARY.map(r => normalizeTitle(r.title))).size, 663);
   for (const r of LIBRARY) {
     assert.ok(!top.has(normalizeTitle(r.title)), `already on site: ${r.title}`);
     assert.ok(LIBRARY_THEMES[r.theme] && LIBRARY_TRACKS[r.track] && LIBRARY_OFFICES[r.office], `${r.n} lookup`);
@@ -164,6 +164,7 @@ await test('513-title library: unique, new to the site, SDG 17 mapped, cited wit
       assert.ok(quote.length > 20 && act.length > 3, `${r.n} quote`);
       assert.ok(!/is hereby (further )?amended|heeby|untitled|Section 7 of Republic Act No\)|Products and\)|Epidemiology and\)/.test(cite), `${r.n} garbled caption: ${cite}`);
       if (/^R\.A\. 9485/.test(cite)) assert.match(cite, /R\.A\. 11032/, `${r.n} cites R.A. 9485 without its amendment`);
+      if (/^R\.A\. 10066 Sec\. (14|15|16|19)\b/.test(cite)) assert.match(cite, /R\.A\. 11961/, `${r.n} cites R.A. 10066 Sec. 14/15/16/19 without R.A. 11961 amendment note`);
     }
     if (r.cites.some(c => /10173/.test(c[0]))) assert.ok(r.cites.some(c => /10173 Sec\. (11|12|13)/.test(c[0])), `${r.n} cites only DPA security sections`);
     if (r.verdict === 'merge') assert.ok(LIBRARY.some(x => x.n === r.mergeInto && x.verdict !== 'merge'));
@@ -175,12 +176,31 @@ await test('513-title library: unique, new to the site, SDG 17 mapped, cited wit
   assert.ok(LIBRARY.find(r => r.n === 275).cites.some(c => /Sec\. 20 \(Report Card Survey\)/.test(c[0])));
   assert.ok(LIBRARY.find(r => r.n === 192).cites.some(c => /10152 Sec\. 3/.test(c[0])));
   assert.equal(LIBRARY.filter(r => r.cites.some(c => /^R\.A\. 7160 Sec\. 458 /.test(c[0]))).length, 0, 'bare Sec. 458 remains');
+  assert.ok(LIBRARY.find(r => r.n === 515).cites.some(c => /R\.A\. 8794 Sec\. 6/.test(c[0])));
+  assert.ok(!LIBRARY.find(r => r.n === 519).cites.some(c => /R\.A\. 11229/.test(c[0])));
+  assert.ok(LIBRARY.find(r => r.n === 525).cites[0][0].includes('R.A. 6969 Sec. 6'));
+  assert.ok(LIBRARY.find(r => r.n === 551).cites.some(c => /P\.D\. 705 Sec\. 68/.test(c[0])));
+  assert.ok(LIBRARY.find(r => r.n === 552).cites[0][0].includes('R.A. 6969 Sec. 6'));
+  assert.ok(LIBRARY.find(r => r.n === 554).cites.some(c => /R\.A\. 7942 Sec\. 43/.test(c[0])));
+  assert.ok(!LIBRARY.find(r => r.n === 556).cites.some(c => /R\.A\. 11285 Sec\. 8/.test(c[0])));
+  assert.ok(LIBRARY.find(r => r.n === 562).cites[0][0].includes('R.A. 8749 Sec. 19'));
+  assert.ok(LIBRARY.find(r => r.n === 563).cites[0][0].includes('R.A. 11646 Sec. 5'));
+  assert.ok(LIBRARY.find(r => r.n === 577).cites.some(c => /R\.A\. 11982 Sec\. 1/.test(c[0])));
+  assert.ok(LIBRARY.find(r => r.n === 600).cites.some(c => /R\.A\. 9520 Sec\. 86/.test(c[0])));
+  assert.ok(LIBRARY.find(r => r.n === 605).cites[0][0].includes('R.A. 7160 Sec. 143'));
+  assert.ok(LIBRARY.find(r => r.n === 637).cites[0][0].includes('P.D. 198 Sec. 5'));
+  assert.ok(!LIBRARY.find(r => r.n === 639).cites.some(c => /R\.A\. 11315/.test(c[0])));
+  assert.ok(!LIBRARY.find(r => r.n === 645).cites.some(c => /R\.A\. 10625/.test(c[0])));
   for (const c of ATTORNEY_REVIEW) assert.ok(ATTORNEY_VERDICTS[c.verdict] && c.finding && c.action);
+  assert.equal(ATTORNEY_REVIEW.length, 29);
   const sum = librarySummary(LIBRARY);
-  assert.equal(sum.recommended + sum.revise + sum.merge, 513); assert.equal(sum.bsit + sum.msit + sum.doctoral, 513);
+  assert.equal(sum.recommended + sum.revise + sum.merge, 663); assert.equal(sum.bsit + sum.msit + sum.doctoral, 663);
+  assert.equal(sum.expansion150, 150);
+  assert.equal(sum.changed, 87);
   assert.ok(filterLibrary(LIBRARY, {target: '17.7'}).every(r => r.targets.includes('17.7')));
   assert.ok(filterLibrary(LIBRARY, {search: '11032'}).length >= 12);
-  assert.ok(filterLibrary(LIBRARY, {changed: 'changed', kind: 'software'}).every(r => r.check && r.hw === 0));
+  assert.equal(filterLibrary(LIBRARY, {changed: 'expansion150'}).length, 150);
+  assert.ok(filterLibrary(LIBRARY, {changed: 'changed', kind: 'software'}).every(r => r.check && r.check !== 'expansion150' && r.hw === 0));
 });
 let cookie, initial;
 const get = async () => (await fetch(base+'/api/workspace',{headers:cookie?{Cookie:cookie}:{}})).json();

@@ -186,23 +186,24 @@ await test('SDG 17 title review filters, links drafts and adds revised titles on
  await page.evaluate(async keep=>{const r=await(await fetch('/api/workspace')).json();r.state.custom=keep;r.state.shortlist=r.state.shortlist.filter(id=>id.startsWith('default-')||keep.some(p=>p.id===id));r.state.reviews=Object.fromEntries(Object.entries(r.state.reviews).filter(([id])=>id.startsWith('default-')||keep.some(p=>p.id===id)));await fetch('/api/workspace',{method:'PUT',headers:{'Content-Type':'application/json','X-Workspace-Request':'1'},body:JSON.stringify(r)})},before);
  await open(page);await page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished)));
 });
-await test('513-title library loads lazily, filters, pages, adds once and shows counsel review',async()=>{
+await test('663-title library loads lazily, filters, pages, adds once and shows counsel review',async()=>{
  await page.locator('#library').scrollIntoViewIfNeeded();await page.locator('#libraryBody').waitFor({state:'visible'});
- assert.equal(await page.locator('#libraryList .library-item').count(),20);assert.match(await page.locator('#libraryStatus').textContent(),/513 of 513 shown/);
+ assert.equal(await page.locator('#libraryList .library-item').count(),20);assert.match(await page.locator('#libraryStatus').textContent(),/663 of 663 shown/);
  await page.locator('#libraryMore').click();assert.equal(await page.locator('#libraryList .library-item').count(),40);
  await page.locator('#libraryTargets [data-target="17.7"]').click();assert.equal(await page.locator('#libraryTargets [data-target="17.7"]').getAttribute('aria-pressed'),'true');
  const n=await page.locator('#libraryList .library-item').count();assert.ok(n>0&&n<=20);assert.equal(await page.locator('#libraryList .library-item .targets abbr',{hasText:'17.7'}).count(),n);
  await page.locator('#libraryReset').click();await page.locator('#librarySearch').fill('Citizens Charter');assert.ok(await page.locator('#lib-275').isVisible());
  await page.locator('#lib-275 summary').click();assert.match(await page.locator('#lib-275 .legal-basis').textContent(),/R\.A\. 11032/);assert.match(await page.locator('#lib-275 .legal-basis').textContent(),/Sec\. 20 \(Report Card Survey\)/);
- await page.locator('#librarySearch').fill('');await page.locator('#libraryTrack').selectOption('D');assert.match(await page.locator('#libraryStatus').textContent(),/^116 of 513/);await page.locator('#libraryTrack').selectOption('all');
+ await page.locator('#librarySearch').fill('');await page.locator('#libraryTrack').selectOption('D');assert.match(await page.locator('#libraryStatus').textContent(),/^126 of 663/);await page.locator('#libraryTrack').selectOption('all');
+ await page.locator('#libraryChanged').selectOption('expansion150');assert.match(await page.locator('#libraryStatus').textContent(),/^150 of 663/);await page.locator('#libraryChanged').selectOption('all');
  await page.locator('#libraryVerdict').selectOption('merge');await page.locator('#lib-187 .compact-link').click();assert.ok(await page.locator('#lib-173').isVisible());
  await page.locator('#libraryReset').click();
  const before=(await state(page)).custom.length;await page.locator('[data-lib-add="1"]').click();await saved(page);
  const s=await state(page);assert.equal(s.custom.length,before+1);assert.match(s.custom.at(-1).title,/^JeepWatch Lipa/);assert.match(s.custom.at(-1).domain,/^SDG 17 · .*17\.8/);
  assert.equal(await page.locator('[data-lib-add="1"]').isDisabled(),true);
  const dl=page.waitForEvent('download');await page.locator('#libraryCsv').click();await(await dl).saveAs('test-results/library.csv');assert.match(await readFile('test-results/library.csv','utf8'),/JeepWatch Lipa/);
- await page.locator('#libraryPrint').click();assert.equal(await page.locator('.comparison tbody tr').count(),513);await close();
- await page.locator('#attorneyReview summary').click();assert.ok(await page.locator('#attorneyList .counsel-item').count()>=20);assert.ok(await page.locator('#attorneyList [data-verdict="wrong"]').count()>=4);
+ await page.locator('#libraryPrint').click();assert.equal(await page.locator('.comparison tbody tr').count(),663);await close();
+ await page.locator('#attorneyReview summary').click();assert.ok(await page.locator('#attorneyList .counsel-item').count()>=29);assert.ok(await page.locator('#attorneyList [data-verdict="wrong"]').count()>=4);
  await page.locator('#attorneyReview').evaluate(el=>el.open=false);
  await page.evaluate(async()=>{const r=await(await fetch('/api/workspace')).json();r.state.custom=r.state.custom.filter(p=>!p.title.startsWith('JeepWatch Lipa'));await fetch('/api/workspace',{method:'PUT',headers:{'Content-Type':'application/json','X-Workspace-Request':'1'},body:JSON.stringify({state:r.state,revision:r.revision})})});
  await open(page);

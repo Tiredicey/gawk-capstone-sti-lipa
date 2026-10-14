@@ -10,7 +10,7 @@ export function filterLibrary(list, {search = '', theme = 'all', track = 'all', 
     && (fit === 'all' || r.fit === fit)
     && (target === 'all' || r.targets.includes(target))
     && (kind === 'all' || (kind === 'hardware' ? r.hw === 1 : r.hw === 0))
-    && (changed === 'all' || (changed === 'changed' ? Boolean(r.check) : !r.check))
+    && (changed === 'all' || (changed === 'changed' ? Boolean(r.check) && r.check !== 'expansion150' : changed === 'expansion150' ? r.check === 'expansion150' : !r.check))
     && (!query || normalizeTitle([r.n, r.title, r.why, r.office, r.open, r.scope, ...r.notes, ...r.cites.map(c => `${c[0]} ${c[1]}`), r.targets.join(' ')].join(' ')).includes(query)));
 }
 
@@ -23,7 +23,7 @@ export function librarySummary(list) {
     recommended: count('verdict', 'recommended'), revise: count('verdict', 'revise'), merge: count('verdict', 'merge'),
     strong: count('fit', 'strong'), moderate: count('fit', 'moderate'), weak: count('fit', 'weak'),
     bsit: count('track', 'B'), msit: count('track', 'M'), doctoral: count('track', 'D'),
-    hardware: count('hw', 1), changed: list.filter(r => r.check).length, institutional: count('institutional', 1),
+    hardware: count('hw', 1), changed: list.filter(r => r.check && r.check !== 'expansion150').length, expansion150: count('check', 'expansion150'), institutional: count('institutional', 1),
     laws: new Set(list.flatMap(r => r.cites.map(c => c[2]))).size, targets
   };
 }
@@ -35,6 +35,6 @@ export function libraryToProposal(r, offices, id) {
     title: r.title.slice(0, 240),
     domain: `SDG 17 · ${r.targets.join(', ')}`,
     desc: `${r.why}\n\nProposed partner: ${offices[r.office] || r.office}\nLegal basis: ${basis}${r.scope ? `\n\nBSIT scope: ${r.scope}` : ''}`.slice(0, 4000),
-    note: `From the 513-title research library, item ${r.n}.${r.open ? `\nOpen point: ${r.open}` : ''}${r.notes.length ? `\nNotes: ${r.notes.join(' ')}` : ''}\nSources: ${[...new Set(r.cites.map(c => c[2]))].join(' ')}`.slice(0, 2000)
+    note: `From the 663-title research library, item ${r.n}.${r.open ? `\nOpen point: ${r.open}` : ''}${r.notes.length ? `\nNotes: ${r.notes.join(' ')}` : ''}\nSources: ${[...new Set(r.cites.map(c => c[2]))].join(' ')}`.slice(0, 2000)
   };
 }
